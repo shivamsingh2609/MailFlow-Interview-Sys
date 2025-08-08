@@ -97,7 +97,7 @@ const Campaigns: React.FC = () => {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Campaigns</h1>
 
-      {/* Form */}
+     
       <form onSubmit={handleSubmit} className="bg-white p-4 rounded shadow mb-6">
         <div className="mb-4">
           <label className="block font-medium">Campaign Name</label>
@@ -158,7 +158,7 @@ const Campaigns: React.FC = () => {
         </button>
       </form>
 
-      {/* Campaign List */}
+      
       <div>
         <h2 className="text-xl font-semibold mb-2">Your Campaigns</h2>
         {campaigns.length === 0 ? (

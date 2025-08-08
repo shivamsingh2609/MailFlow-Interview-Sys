@@ -18,12 +18,10 @@ export default function Login() {
 
       const user = res.data.user;
       if (user && user._id) {
-        // ✅ Store user info
+    
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("userId", user._id);
         localStorage.setItem("user", JSON.stringify({ email: user.email }));
-
-        // ✅ Navigate to dashboard
         navigate("/dashboard");
       } else {
         setErrorMsg("Invalid response: user ID missing");

@@ -12,7 +12,7 @@ export default function Contacts() {
   const fetchContacts = async () => {
     try {
       if (!userId) {
-        console.error("❌ No userId found in localStorage");
+        console.error("No userId found in localStorage");
         return;
       }
       const res = await axios.get('http://localhost:5000/api/contacts', {
@@ -20,7 +20,7 @@ export default function Contacts() {
       });
       setContacts(res.data);
     } catch (error) {
-      console.error("❌ Failed to fetch contacts", error);
+      console.error("Failed to fetch contacts", error);
     }
   };
 
@@ -28,12 +28,12 @@ export default function Contacts() {
     e.preventDefault();
     try {
       if (!userId) {
-        console.error("❌ No userId found in localStorage");
+        console.error("No userId found in localStorage");
         return;
       }
 
       if (!form.name.trim() || !form.email.trim()) {
-        console.error("❌ Name and email cannot be empty");
+        console.error("Name and email cannot be empty");
         return;
       }
 
@@ -52,14 +52,14 @@ export default function Contacts() {
       setForm({ name: '', email: '' });
       fetchContacts();
     } catch (error) {
-      console.error("❌ Failed to save contact", error);
+      console.error("Failed to save contact", error);
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       if (!userId) {
-        console.error("❌ No userId found in localStorage");
+        console.error("No userId found in localStorage");
         return;
       }
       await axios.delete(`http://localhost:5000/api/contacts/${id}`, {
@@ -67,7 +67,7 @@ export default function Contacts() {
       });
       fetchContacts();
     } catch (error) {
-      console.error("❌ Failed to delete contact", error);
+      console.error("Failed to delete contact", error);
     }
   };
 

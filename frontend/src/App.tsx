@@ -1,4 +1,4 @@
-// App.tsx
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Dashboard from "./pages/Dashboard";
@@ -12,13 +12,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
+       
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Protected Routes under Navbar layout */}
         
-          <Route path="/dashboard" element={<Dashboard />} /> {/* default route */}
+        
+          <Route path="/dashboard" element={<Dashboard />} /> 
           <Route path="contacts" element={<Contacts />} />
           <Route path="campaigns" element={<Campaigns />} />
         

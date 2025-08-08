@@ -1,4 +1,4 @@
-// ✅ 1. Updated Campaign Model - models/Campaign.js
+
 import mongoose from 'mongoose';
 
 const campaignSchema = new mongoose.Schema({

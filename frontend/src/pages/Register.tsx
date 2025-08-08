@@ -41,7 +41,6 @@ export default function Register() {
       );
 
 
-      // ✅ Store token and user info in localStorage
       localStorage.setItem("token", response.data.token);
        localStorage.setItem('userId', response.data.user._id);
 
@@ -63,7 +62,6 @@ export default function Register() {
       }
 
 
-      // ✅ Navigate to dashboard
       navigate("/");
     } catch (err: any) {
       const backendMsg = err.response?.data?.message;
@@ -80,7 +78,7 @@ export default function Register() {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Username */}
+         
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
               Username
@@ -96,7 +94,7 @@ export default function Register() {
             />
           </div>
 
-          {/* Email */}
+        
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
               Email address
@@ -112,7 +110,6 @@ export default function Register() {
             />
           </div>
 
-          {/* Password */}
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
               Password

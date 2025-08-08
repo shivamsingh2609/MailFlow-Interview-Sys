@@ -10,7 +10,7 @@ const Dashboard: React.FC = () => {
   const [userEmail, setUserEmail] = useState("");
   const [userId, setUserId] = useState("");
 
-  // 🔹 Get user from localStorage
+  
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const storedUserId = localStorage.getItem("userId");
@@ -25,7 +25,7 @@ const Dashboard: React.FC = () => {
     }
   }, []);
 
-  // 🔹 Fetch stats
+ 
   useEffect(() => {
     if (!userId) return;
 
@@ -33,7 +33,7 @@ const Dashboard: React.FC = () => {
       try {
         const [campaignRes, contactRes] = await Promise.all([
           axios.get(`http://localhost:5000/api/campaigns?userId=${userId}`),
-          axios.get(`http://localhost:5000/api/contacts?userId=${userId}`), // ✅ Pass userId here
+          axios.get(`http://localhost:5000/api/contacts?userId=${userId}`), 
         ]);
 
         setCampaignCount(campaignRes.data.length);
@@ -50,7 +50,7 @@ const Dashboard: React.FC = () => {
         setEmailsSent(totalEmails);
       } catch (error: any) {
         console.error(
-          "❌ Failed to fetch dashboard stats:",
+          "Failed to fetch dashboard stats:",
           error?.response?.data || error.message
         );
       }
@@ -66,7 +66,6 @@ const Dashboard: React.FC = () => {
         <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-8">
           <h1 className="text-3xl font-bold mb-6 text-center">MailFlow Dashboard</h1>
 
-          {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <div className="bg-white p-4 rounded shadow text-center">
               <h3 className="text-lg font-medium text-gray-600">Total Campaigns</h3>
@@ -82,7 +81,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Navigation */}
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
             <Link to="/contacts">
               <div className="bg-blue-100 hover:bg-blue-200 p-6 rounded-lg shadow cursor-pointer transition duration-300">
@@ -99,7 +98,6 @@ const Dashboard: React.FC = () => {
             </Link>
           </div>
 
-          {/* User Info */}
           <div className="text-center">
             <p className="text-gray-600 mb-4">
               Logged in as: <span className="font-semibold">{userEmail}</span>

@@ -1,6 +1,5 @@
 import Contact from '../models/Contact.js';
 
-// Get all contacts for a specific user
 export const getContacts = async (req, res) => {
   try {
     const { userId } = req.query;
@@ -9,7 +8,6 @@ export const getContacts = async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // ✅ Use createdBy in query instead of userId
     const contacts = await Contact.find({ createdBy: userId });
     res.json(contacts);
   } catch (error) {
@@ -18,7 +16,7 @@ export const getContacts = async (req, res) => {
   }
 };
 
-// Create a new contact
+
 export const createContact = async (req, res) => {
   try {
     const { name, email, userId } = req.body;
@@ -27,7 +25,7 @@ export const createContact = async (req, res) => {
       return res.status(400).json({ error: 'Name, email, and userId are required' });
     }
 
-    // ✅ Save user reference in createdBy
+  
     const contact = new Contact({ name, email, createdBy: userId });
     await contact.save();
 
@@ -38,7 +36,7 @@ export const createContact = async (req, res) => {
   }
 };
 
-// Update a contact
+
 export const updateContact = async (req, res) => {
   try {
     const { id } = req.params;
@@ -48,7 +46,6 @@ export const updateContact = async (req, res) => {
       return res.status(400).json({ error: 'Name, email, and userId are required' });
     }
 
-    // ✅ Ensure user can only update their own contact
     const contact = await Contact.findOneAndUpdate(
       { _id: id, createdBy: userId },
       { name, email },
@@ -66,17 +63,16 @@ export const updateContact = async (req, res) => {
   }
 };
 
-// Delete a contact
 export const deleteContact = async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId } = req.query; // send in query for safety
+    const { userId } = req.query; 
 
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // ✅ Ensure user can only delete their own contact
+    
     const deleted = await Contact.findOneAndDelete({ _id: id, createdBy: userId });
     if (!deleted) {
       return res.status(404).json({ error: 'Contact not found or not authorized' });
