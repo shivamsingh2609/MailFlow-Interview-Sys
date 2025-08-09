@@ -15,6 +15,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "Username is required"],
   },
+  gmail: {
+    email: { type: String },
+    refreshToken: { type: String }, 
+    connected: { type: Boolean, default: false }, 
+  },
 });
 
 userSchema.pre("save", async function (next) {
