@@ -2,10 +2,8 @@ import mongoose from "mongoose";
 import Campaign from "../models/Campaign.js";
 import User from "../models/user.js";
 import { sendMailService } from "../services/sendMailService.js";
+import { generateEmailContent } from "../services/aiService.js"; 
 
-/** -----------------------
- * Get all campaigns for a user
- * ----------------------- */
 export const getCampaigns = async (req, res) => {
   try {
     const { userId } = req.query;
@@ -31,9 +29,6 @@ export const getCampaigns = async (req, res) => {
   }
 };
 
-/** -----------------------
- * Create a new campaign
- * ----------------------- */
 export const createCampaign = async (req, res) => {
   try {
     const { name, subject, message, recipients, createdBy } = req.body;
@@ -53,7 +48,6 @@ export const createCampaign = async (req, res) => {
       return res.status(404).json({ message: "User not found for createdBy" });
     }
 
-    // Convert all recipients to ObjectIds
     const recipientObjectIds = recipients.map((r) => {
       if (mongoose.Types.ObjectId.isValid(r)) {
         return new mongoose.Types.ObjectId(r);
@@ -84,9 +78,6 @@ export const createCampaign = async (req, res) => {
   }
 };
 
-/** -----------------------
- * Send a campaign
- * ----------------------- */
 export const sendCampaign = async (req, res) => {
   try {
     const { id: campaignId } = req.params;
@@ -102,7 +93,6 @@ export const sendCampaign = async (req, res) => {
       return res.status(400).json({ message: "No recipients found for this campaign" });
     }
 
-    // Call the service with owner and campaignId
     const result = await sendMailService(campaign.createdBy, campaignId);
 
     if (result.success) {
@@ -113,5 +103,21 @@ export const sendCampaign = async (req, res) => {
   } catch (error) {
     console.error("Error sending campaign:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const generateEmail = async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ message: "Prompt is required" });
+    }
+
+    const aiContent = await generateEmailContent(prompt);
+
+    res.status(200).json({ content: aiContent });
+  } catch (error) {
+    console.error("Error generating email content:", error);
+    res.status(500).json({ message: "Failed to generate email content" });
   }
 };

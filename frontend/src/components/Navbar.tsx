@@ -15,14 +15,6 @@ export default function Navbar() {
     <nav className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
       <h1 className="text-xl font-bold text-blue-600">MailFlow</h1>
       <div className="flex items-center gap-4">
-        {userId && (
-          <a
-            href={`http://localhost:5000/api/auth/google/connect/${userId}`}
-            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition duration-300"
-          >
-            Connect Gmail
-          </a>
-        )}
 
         <button
           onClick={handleLogout}

@@ -1,4 +1,4 @@
-// services/sendMailService.js
+
 import nodemailer from "nodemailer";
 import Campaign from "../models/Campaign.js";
 import User from "../models/user.js";
@@ -58,7 +58,7 @@ Sent by: ${user.username} (${user.email})
     for (const email of emailsToSend) {
       console.log(`Sending to ${email}`);
       await transporter.sendMail({
-        from: `"${user.name}" <${process.env.MAIL}>`,
+        from: `"${user.username}" <${process.env.MAIL}>`,
         to: email,
         subject,
         text: bodyText,

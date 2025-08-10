@@ -11,7 +11,7 @@ export const getContacts = async (req, res) => {
     const contacts = await Contact.find({ createdBy: userId });
     res.json(contacts);
   } catch (error) {
-    console.error('❌ Failed to fetch contacts:', error.message);
+    console.error('Failed to fetch contacts:', error.message);
     res.status(500).json({ error: 'Failed to fetch contacts' });
   }
 };
@@ -31,7 +31,7 @@ export const createContact = async (req, res) => {
 
     res.status(201).json(contact);
   } catch (error) {
-    console.error('❌ Failed to create contact:', error.message);
+    console.error('Failed to create contact:', error.message);
     res.status(500).json({ error: 'Failed to create contact' });
   }
 };
@@ -58,7 +58,7 @@ export const updateContact = async (req, res) => {
 
     res.json(contact);
   } catch (error) {
-    console.error('❌ Failed to update contact:', error.message);
+    console.error('Failed to update contact:', error.message);
     res.status(500).json({ error: 'Failed to update contact' });
   }
 };
@@ -80,7 +80,7 @@ export const deleteContact = async (req, res) => {
 
     res.json({ message: 'Contact deleted successfully' });
   } catch (error) {
-    console.error('❌ Failed to delete contact:', error.message);
+    console.error('Failed to delete contact:', error.message);
     res.status(500).json({ error: 'Failed to delete contact' });
   }
 };

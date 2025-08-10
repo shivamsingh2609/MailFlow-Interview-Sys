@@ -24,7 +24,7 @@ export const registerUser = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Registration error:", err);
+    console.error("Registration error:", err);
 
     let message = "Registration failed";
 

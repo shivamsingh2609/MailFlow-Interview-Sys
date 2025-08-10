@@ -27,6 +27,7 @@ const Campaigns: React.FC = () => {
     message: "",
     recipients: [] as string[],
   });
+  const [loadingAI, setLoadingAI] = useState(false);
 
   const userId = localStorage.getItem("userId");
 
@@ -75,15 +76,12 @@ const Campaigns: React.FC = () => {
         setFormData({ name: "", subject: "", message: "", recipients: [] });
       })
       .catch((err) => console.error("Error creating campaign:", err));
-      console.log("Submitting campaign:", formData);
-
   };
 
   const handleSend = (id: string) => {
     const campaignToSend = campaigns.find((c) => c._id === id);
     if (!campaignToSend) return;
 
-    // Send recipient IDs as strings (backend can convert to ObjectId)
     axios
       .post(`http://localhost:5000/api/campaigns/send/${id}`, {
         recipients: campaignToSend.recipients.map((r) => r._id),
@@ -96,17 +94,34 @@ const Campaigns: React.FC = () => {
       .catch((err) => console.error("Error sending campaign:", err));
   };
 
+  const handleGenerateAI = async () => {
+    if (!formData.name) {
+      alert("Please enter a campaign name before generating with AI.");
+      return;
+    }
+    try {
+      setLoadingAI(true);
+      const res = await axios.post("http://localhost:5000/api/campaigns/generate", {
+        prompt: `Write an engaging marketing email for the campaign: ${formData.name}`,
+      });
+      setFormData((prev) => ({
+        ...prev,
+        message: res.data.content || prev.message,
+      }));
+    } catch (error) {
+      console.error("AI generation error:", error);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
   return (
     <>
       <Navbar />
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Campaigns</h1>
 
-        {/* Create Campaign Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white p-4 rounded shadow mb-6"
-        >
+        <form onSubmit={handleSubmit} className="bg-white p-4 rounded shadow mb-6">
           <div className="mb-4">
             <label className="block font-medium">Campaign Name</label>
             <input
@@ -119,16 +134,18 @@ const Campaigns: React.FC = () => {
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block font-medium">Subject</label>
-            <input
-              type="text"
-              name="subject"
-              value={formData.subject}
-              onChange={handleChange}
-              className="w-full border px-3 py-2 rounded"
-              required
-            />
+          <div className="mb-4 flex items-center gap-2">
+            <div className="flex-1">
+              <label className="block font-medium">Subject</label>
+              <input
+                type="text"
+                name="subject"
+                value={formData.subject}
+                onChange={handleChange}
+                className="w-full border px-3 py-2 rounded"
+                required
+              />
+            </div>
           </div>
 
           <div className="mb-4">
@@ -140,16 +157,21 @@ const Campaigns: React.FC = () => {
               className="w-full border px-3 py-2 rounded"
               required
             />
+            <button
+              type="button"
+              onClick={handleGenerateAI}
+              className="mt-2 bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+              disabled={loadingAI}
+            >
+              {loadingAI ? "Generating..." : "✨ Generate with AI"}
+            </button>
           </div>
 
           <div className="mb-4">
             <label className="block font-medium mb-2">Select Recipients</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto border p-2 rounded">
               {contacts.map((contact) => (
-                <label
-                  key={`contact-${contact._id}`}
-                  className="flex items-center space-x-2"
-                >
+                <label key={contact._id} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     checked={formData.recipients.includes(contact._id)}
@@ -171,7 +193,6 @@ const Campaigns: React.FC = () => {
           </button>
         </form>
 
-        {/* Campaign List */}
         <div>
           <h2 className="text-xl font-semibold mb-2">Your Campaigns</h2>
           {campaigns.length === 0 ? (
@@ -179,10 +200,7 @@ const Campaigns: React.FC = () => {
           ) : (
             <ul className="space-y-4">
               {campaigns.map((campaign) => (
-                <li
-                  key={`campaign-${campaign._id}`}
-                  className="bg-gray-100 p-4 rounded shadow"
-                >
+                <li key={campaign._id} className="bg-gray-100 p-4 rounded shadow">
                   <h3 className="text-lg font-bold">{campaign.name}</h3>
                   <p>
                     <strong>Subject:</strong> {campaign.subject}
@@ -193,18 +211,13 @@ const Campaigns: React.FC = () => {
                   <p>
                     <strong>Status:</strong> {campaign.status}
                   </p>
-
-                  <p>
-                    <strong>Recipients:</strong>
-                  </p>
                   <ul className="list-disc list-inside ml-4">
                     {campaign.recipients?.map((recipient) => (
-                      <li key={`recipient-${recipient._id}`}>
+                      <li key={recipient._id}>
                         {recipient.name} ({recipient.email})
                       </li>
                     ))}
                   </ul>
-
                   {campaign.status !== "Sent" && (
                     <button
                       onClick={() => handleSend(campaign._id!)}
