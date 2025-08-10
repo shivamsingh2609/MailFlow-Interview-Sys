@@ -1,14 +1,7 @@
 import mongoose from "mongoose";
-import nodemailer from "nodemailer";
-import { google } from "googleapis";
 import Campaign from "../models/Campaign.js";
 import User from "../models/user.js";
-
-const {
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-  GOOGLE_REDIRECT_URI,
-} = process.env;
+import { sendMailService } from "../services/sendMailService.js";
 
 /** -----------------------
  * Get all campaigns for a user
@@ -20,7 +13,6 @@ export const getCampaigns = async (req, res) => {
       return res.status(400).json({ message: "userId query param is required" });
     }
 
-    // Find user by ID or email
     const user = mongoose.Types.ObjectId.isValid(userId)
       ? await User.findById(userId)
       : await User.findOne({ email: userId });
@@ -45,11 +37,14 @@ export const getCampaigns = async (req, res) => {
 export const createCampaign = async (req, res) => {
   try {
     const { name, subject, message, recipients, createdBy } = req.body;
+
     if (!createdBy) {
       return res.status(400).json({ message: "createdBy field is required" });
     }
+    if (!Array.isArray(recipients) || recipients.length === 0) {
+      return res.status(400).json({ message: "Recipients must be a non-empty array of IDs" });
+    }
 
-    // Find user by ID or email
     const user = mongoose.Types.ObjectId.isValid(createdBy)
       ? await User.findById(createdBy)
       : await User.findOne({ email: createdBy });
@@ -58,17 +53,31 @@ export const createCampaign = async (req, res) => {
       return res.status(404).json({ message: "User not found for createdBy" });
     }
 
+    // Convert all recipients to ObjectIds
+    const recipientObjectIds = recipients.map((r) => {
+      if (mongoose.Types.ObjectId.isValid(r)) {
+        return new mongoose.Types.ObjectId(r);
+      }
+      return null;
+    }).filter(Boolean);
+
+    if (recipientObjectIds.length !== recipients.length) {
+      return res.status(400).json({ message: "One or more recipient IDs are invalid" });
+    }
+
     const newCampaign = new Campaign({
       name,
       subject,
       message,
-      recipients,
+      recipients: recipientObjectIds,
       status: "Draft",
       createdBy: user._id,
     });
 
     const savedCampaign = await newCampaign.save();
-    res.status(201).json(savedCampaign);
+    const populatedCampaign = await savedCampaign.populate("recipients", "name email");
+
+    res.status(201).json(populatedCampaign);
   } catch (error) {
     console.error("Error creating campaign:", error);
     res.status(500).json({ message: "Server error while creating campaign" });
@@ -76,81 +85,33 @@ export const createCampaign = async (req, res) => {
 };
 
 /** -----------------------
- * Send a campaign using user's Gmail
+ * Send a campaign
  * ----------------------- */
 export const sendCampaign = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id: campaignId } = req.params;
 
-    // Find campaign with recipients
-    const campaign = await Campaign.findById(id).populate("recipients");
+    const campaign = await Campaign.findById(campaignId)
+      .populate("recipients", "email createdBy");
+
     if (!campaign) {
       return res.status(404).json({ message: "Campaign not found" });
     }
 
-    // Get creator info
-    const user = await User.findById(campaign.createdBy);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!Array.isArray(campaign.recipients) || campaign.recipients.length === 0) {
+      return res.status(400).json({ message: "No recipients found for this campaign" });
     }
 
-    // Ensure Gmail OAuth is connected
-    if (!user.gmail?.refreshToken) {
-      return res.status(400).json({
-        message: "User Gmail not connected. Please connect Gmail first.",
-      });
+    // Call the service with owner and campaignId
+    const result = await sendMailService(campaign.createdBy, campaignId);
+
+    if (result.success) {
+      res.status(200).json({ message: result.message, campaign });
+    } else {
+      res.status(400).json({ message: result.message });
     }
-
-    // Create OAuth client
-    const oauth2Client = new google.auth.OAuth2(
-      GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET,
-      GOOGLE_REDIRECT_URI
-    );
-    oauth2Client.setCredentials({ refresh_token: user.gmail.refreshToken });
-
-    // Get access token
-    const accessTokenRes = await oauth2Client.getAccessToken();
-    const accessToken = accessTokenRes?.token ?? accessTokenRes;
-
-    // Create transporter
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        type: "OAuth2",
-        user: user.gmail.email || user.email,
-        clientId: GOOGLE_CLIENT_ID,
-        clientSecret: GOOGLE_CLIENT_SECRET,
-        refreshToken: user.gmail.refreshToken,
-        accessToken,
-      },
-    });
-
-    // Prepare recipients
-    const recipientEmails = campaign.recipients.map(r => r.email).join(", ");
-
-    // Send mail
-    const mailOptions = {
-      from: `${user.username || user.email} <${user.gmail.email || user.email}>`,
-      to: recipientEmails,
-      subject: campaign.subject,
-      text: campaign.message,
-      html: `<div>${campaign.message}</div>`,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email send info:", info);
-
-    // Mark campaign as sent
-    campaign.status = "Sent";
-    await campaign.save();
-
-    res.json({ message: "Campaign sent successfully", info });
   } catch (error) {
     console.error("Error sending campaign:", error);
-    res.status(500).json({
-      message: "Failed to send campaign",
-      error: error.message,
-    });
+    res.status(500).json({ message: "Server error" });
   }
 };
