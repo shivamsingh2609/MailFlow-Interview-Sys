@@ -5,15 +5,30 @@ import Campaigns from "./pages/Campaigns";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute"; 
 
 export default function App() {
-  const token = localStorage.getItem("token");
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={token ? <Navigate to="/dashboard" replace /> : <Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route
+          path="/"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
+
+    
         <Route
           path="/dashboard"
           element={

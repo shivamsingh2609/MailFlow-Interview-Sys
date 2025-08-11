@@ -1,20 +1,20 @@
-import { useEffect, useState, ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import apiClient from "../api/axiosInstance";
 
-interface ProtectedRouteProps {
+interface PublicRouteProps {
   children: ReactNode;
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+export default function PublicRoute({ children }: PublicRouteProps) {
   const [loading, setLoading] = useState(true);
-  const [isValid, setIsValid] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-
     if (!token) {
-      setIsValid(false);
+     
+      setIsLoggedIn(false);
       setLoading(false);
       return;
     }
@@ -22,10 +22,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     apiClient
       .get("/api/auth/validate-token")
       .then(() => {
-        setIsValid(true);
+        setIsLoggedIn(true);
       })
       .catch(() => {
-        setIsValid(false);
+        setIsLoggedIn(false);
         localStorage.removeItem("token");
       })
       .finally(() => {
@@ -37,5 +37,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <p>Loading...</p>;
   }
 
-  return isValid ? <>{children}</> : <Navigate to="/" replace />;
+
+  return isLoggedIn ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 }
