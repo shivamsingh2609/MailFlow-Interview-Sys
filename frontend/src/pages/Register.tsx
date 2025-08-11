@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import apiClient from "../api/axiosInstance";
 
 export default function Register() {
   const [userData, setUserData] = useState({
@@ -26,7 +26,7 @@ export default function Register() {
     }
 
     try {
-      const response = await axios.post(
+      const response = await apiClient.post(
         "http://localhost:5000/api/auth/register",
         {
           username: userData.username.trim(),
@@ -90,7 +90,7 @@ export default function Register() {
               value={userData.username}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="JohnDoe"
+              placeholder="Username"
             />
           </div>
 

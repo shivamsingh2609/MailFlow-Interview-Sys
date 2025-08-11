@@ -20,7 +20,8 @@ export const getCampaigns = async (req, res) => {
     }
 
     const campaigns = await Campaign.find({ createdBy: user._id })
-      .populate("recipients", "name email");
+      .populate("createdBy", "email") 
+      ;
 
     res.status(200).json(campaigns);
   } catch (error) {
@@ -37,7 +38,7 @@ export const createCampaign = async (req, res) => {
       return res.status(400).json({ message: "createdBy field is required" });
     }
     if (!Array.isArray(recipients) || recipients.length === 0) {
-      return res.status(400).json({ message: "Recipients must be a non-empty array of IDs" });
+      return res.status(400).json({ message: "Recipients must be a non-empty array of contact snapshots" });
     }
 
     const user = mongoose.Types.ObjectId.isValid(createdBy)
@@ -48,30 +49,24 @@ export const createCampaign = async (req, res) => {
       return res.status(404).json({ message: "User not found for createdBy" });
     }
 
-    const recipientObjectIds = recipients.map((r) => {
-      if (mongoose.Types.ObjectId.isValid(r)) {
-        return new mongoose.Types.ObjectId(r);
+    for (const r of recipients) {
+      if (!r.contactId || !r.name || !r.email) {
+        return res.status(400).json({ message: "Each recipient must include contactId, name, and email" });
       }
-      return null;
-    }).filter(Boolean);
-
-    if (recipientObjectIds.length !== recipients.length) {
-      return res.status(400).json({ message: "One or more recipient IDs are invalid" });
     }
 
     const newCampaign = new Campaign({
       name,
       subject,
       message,
-      recipients: recipientObjectIds,
+      recipients, 
       status: "Draft",
       createdBy: user._id,
     });
 
     const savedCampaign = await newCampaign.save();
-    const populatedCampaign = await savedCampaign.populate("recipients", "name email");
 
-    res.status(201).json(populatedCampaign);
+    res.status(201).json(savedCampaign);
   } catch (error) {
     console.error("Error creating campaign:", error);
     res.status(500).json({ message: "Server error while creating campaign" });
@@ -82,8 +77,7 @@ export const sendCampaign = async (req, res) => {
   try {
     const { id: campaignId } = req.params;
 
-    const campaign = await Campaign.findById(campaignId)
-      .populate("recipients", "email createdBy");
+    const campaign = await Campaign.findById(campaignId);
 
     if (!campaign) {
       return res.status(404).json({ message: "Campaign not found" });
@@ -119,5 +113,31 @@ export const generateEmail = async (req, res) => {
   } catch (error) {
     console.error("Error generating email content:", error);
     res.status(500).json({ message: "Failed to generate email content" });
+  }
+};
+
+export const deleteCampaign = async (req, res) => {
+  try {
+    const campaignId = req.params.id;
+    const userId = req.query.userId; // or get from req.user.id if using auth middleware
+
+    if (!campaignId || !userId) {
+      return res.status(400).json({ error: "Campaign ID and User ID are required" });
+    }
+
+    // Find and delete the campaign only if it belongs to the user
+    const deletedCampaign = await Campaign.findOneAndDelete({
+      _id: campaignId,
+      createdBy: userId,
+    });
+
+    if (!deletedCampaign) {
+      return res.status(404).json({ error: "Campaign not found or not authorized" });
+    }
+
+    res.json({ message: "Campaign deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting campaign:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };

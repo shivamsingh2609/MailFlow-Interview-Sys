@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import apiClient from "../api/axiosInstance";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -11,18 +11,19 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/", {
-        email,
-        password,
-      });
-
+      const loginData = {
+        email :email.trim() ,
+        password :password,
+      }
+      const res = await apiClient.post("http://localhost:5000/api/auth/", loginData);
+      const token =res.data.token ;
       const user = res.data.user;
       if (user && user._id) {
     
-        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("token", token);
         localStorage.setItem("userId", user._id);
         localStorage.setItem("user", JSON.stringify({ email: user.email }));
-        navigate("/dashboard");
+        navigate("/dashboard", {replace : true});
       } else {
         setErrorMsg("Invalid response: user ID missing");
       }

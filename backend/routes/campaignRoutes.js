@@ -1,12 +1,14 @@
 import express from 'express';
-import { getCampaigns, createCampaign, sendCampaign, generateEmail } from '../controllers/campaignController.js';
+import { getCampaigns, createCampaign, sendCampaign, generateEmail, deleteCampaign } from '../controllers/campaignController.js';
+import { verifyToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 
-router.get('/', getCampaigns);
-router.post('/', createCampaign);
-router.post('/send/:id', sendCampaign);
-router.post('/generate', generateEmail);
+router.get('/', verifyToken, getCampaigns);
+router.post('/', verifyToken,createCampaign);
+router.post('/send/:id',verifyToken, sendCampaign);
+router.post('/generate',verifyToken, generateEmail);
+router.delete('/:id' , verifyToken,deleteCampaign )
 
 export default router;

@@ -5,7 +5,13 @@ const campaignSchema = new mongoose.Schema({
   name: { type: String, required: true },
   subject: { type: String, required: true },
   message: { type: String, required: true },
-  recipients: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Contact' }],
+  recipients: [
+    {
+      contactId: { type: mongoose.Schema.Types.ObjectId, ref: "Contact" },
+      name: String,
+      email: String
+    }
+  ],
   status: { type: String, enum: ['Draft', 'Sent'], default: 'Draft' },
   createdAt: { type: Date, default: Date.now },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

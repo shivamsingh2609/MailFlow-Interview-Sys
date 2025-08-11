@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import Navbar from "../components/Navbar";
+import apiClient from "../api/axiosInstance";
 
 interface Contact {
   _id: string;
@@ -9,14 +9,20 @@ interface Contact {
 }
 
 interface Campaign {
-  _id?: string;
+  _id: string;
   name: string;
   subject: string;
   message: string;
-  recipients: Contact[];
+  recipients: {
+    contactId: string;
+    name: string;
+    email: string;
+  }[];
   status?: string;
   createdAt?: string;
 }
+
+type Tab = "draft" | "sent";
 
 const Campaigns: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -28,18 +34,18 @@ const Campaigns: React.FC = () => {
     recipients: [] as string[],
   });
   const [loadingAI, setLoadingAI] = useState(false);
-
+  const [activeTab, setActiveTab] = useState<Tab>("draft");
   const userId = localStorage.getItem("userId");
 
   useEffect(() => {
     if (!userId) return;
 
-    axios
+    apiClient
       .get(`http://localhost:5000/api/campaigns?userId=${userId}`)
       .then((res) => setCampaigns(res.data))
       .catch((err) => console.error("Error fetching campaigns:", err));
 
-    axios
+    apiClient
       .get(`http://localhost:5000/api/contacts?userId=${userId}`)
       .then((res) => setContacts(res.data))
       .catch((err) => console.error("Error fetching contacts:", err));
@@ -64,44 +70,108 @@ const Campaigns: React.FC = () => {
     });
   };
 
+  // Select All logic
+  const allSelected =
+    contacts.length > 0 && formData.recipients.length === contacts.length;
+
+  const handleSelectAllChange = () => {
+    if (allSelected) {
+      setFormData((prev) => ({ ...prev, recipients: [] }));
+    } else {
+      setFormData((prev) => ({ ...prev, recipients: contacts.map((c) => c._id) }));
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    axios
+
+    if (!formData.name.trim()) {
+      alert("Campaign name is required.");
+      return;
+    }
+    if (!formData.subject.trim()) {
+      alert("Subject is required.");
+      return;
+    }
+    if (!formData.message.trim()) {
+      alert("Message cannot be empty.");
+      return;
+    }
+    if (formData.recipients.length === 0) {
+      alert("Please select at least one recipient.");
+      return;
+    }
+
+    const recipientSnapshots = contacts
+      .filter((contact) => formData.recipients.includes(contact._id))
+      .map((contact) => ({
+        contactId: contact._id,
+        name: contact.name,
+        email: contact.email,
+      }));
+
+    apiClient
       .post("http://localhost:5000/api/campaigns", {
-        ...formData,
+        name: formData.name,
+        subject: formData.subject,
+        message: formData.message,
+        recipients: recipientSnapshots,
         createdBy: userId,
       })
       .then((res) => {
         setCampaigns((prev) => [...prev, res.data]);
         setFormData({ name: "", subject: "", message: "", recipients: [] });
+        setActiveTab("draft");
       })
-      .catch((err) => console.error("Error creating campaign:", err));
+      .catch((err) => {
+        console.error("Error creating campaign:", err);
+        alert("Failed to create campaign. Please try again.");
+      });
   };
 
   const handleSend = (id: string) => {
     const campaignToSend = campaigns.find((c) => c._id === id);
     if (!campaignToSend) return;
 
-    axios
+    apiClient
       .post(`http://localhost:5000/api/campaigns/send/${id}`, {
-        recipients: campaignToSend.recipients.map((r) => r._id),
+        recipients: campaignToSend.recipients.map((r) => r.contactId),
       })
       .then(() => {
         setCampaigns((prev) =>
           prev.map((c) => (c._id === id ? { ...c, status: "Sent" } : c))
         );
+        setActiveTab("sent");
       })
-      .catch((err) => console.error("Error sending campaign:", err));
+      .catch((err) => {
+        console.error("Error sending campaign:", err);
+        alert("Failed to send campaign. Please try again.");
+      });
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this campaign?")) return;
+
+    try {
+      await apiClient.delete(`http://localhost:5000/api/campaigns/${id}`, {
+        params: { userId },
+      });
+      setCampaigns((prev) => prev.filter((campaign) => campaign._id !== id));
+      alert("Campaign deleted successfully.");
+    } catch (error) {
+      console.error("Failed to delete campaign:", error);
+      alert("Failed to delete campaign. Please try again.");
+    }
   };
 
   const handleGenerateAI = async () => {
-    if (!formData.name) {
+    if (!formData.name.trim()) {
       alert("Please enter a campaign name before generating with AI.");
       return;
     }
     try {
       setLoadingAI(true);
-      const res = await axios.post("http://localhost:5000/api/campaigns/generate", {
+      const res = await apiClient.post("http://localhost:5000/api/campaigns/generate", {
         prompt: `Write an engaging marketing email for the campaign: ${formData.name}`,
       });
       setFormData((prev) => ({
@@ -110,127 +180,198 @@ const Campaigns: React.FC = () => {
       }));
     } catch (error) {
       console.error("AI generation error:", error);
+      alert("AI generation failed. Please try again.");
     } finally {
       setLoadingAI(false);
     }
   };
 
+  const drafts = campaigns.filter((c) => c.status !== "Sent");
+  const sentCampaigns = campaigns.filter((c) => c.status === "Sent");
+  const displayedCampaigns = activeTab === "draft" ? drafts : sentCampaigns;
+
   return (
     <>
       <Navbar />
-      <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Campaigns</h1>
+      <div className="container mx-auto p-6 max-w-5xl">
+        <h1 className="text-3xl font-extrabold mb-6 text-center text-gray-900">
+          Campaigns Manager
+        </h1>
 
-        <form onSubmit={handleSubmit} className="bg-white p-4 rounded shadow mb-6">
-          <div className="mb-4">
-            <label className="block font-medium">Campaign Name</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full border px-3 py-2 rounded"
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-10">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Create New Campaign</h2>
 
-          <div className="mb-4 flex items-center gap-2">
-            <div className="flex-1">
-              <label className="block font-medium">Subject</label>
+          <input
+            type="text"
+            name="name"
+            placeholder="Campaign Name"
+            value={formData.name}
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-3 w-full mb-4 focus:outline-none focus:ring-2 focus:ring-purple-600"
+            required
+          />
+          <input
+            type="text"
+            name="subject"
+            placeholder="Subject"
+            value={formData.subject}
+            onChange={handleChange}
+            className="border border-gray-300 rounded-md p-3 w-full mb-4 focus:outline-none focus:ring-2 focus:ring-purple-600"
+            required
+          />
+          <textarea
+            name="message"
+            placeholder="Message"
+            value={formData.message}
+            onChange={handleChange}
+            rows={5}
+            className="border border-gray-300 rounded-md p-3 w-full mb-4 resize-none focus:outline-none focus:ring-2 focus:ring-purple-600"
+            required
+          />
+
+          <button
+            type="button"
+            onClick={handleGenerateAI}
+            disabled={loadingAI}
+            className={`mb-6 px-5 py-3 rounded-md font-semibold text-white transition ${
+              loadingAI ? "bg-purple-400 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"
+            }`}
+          >
+            {loadingAI ? "Generating AI Content..." : "✨ Generate with AI"}
+          </button>
+
+          <div className="mb-6">
+            <label className="block font-semibold mb-2 text-gray-700">
+              Select Recipients
+            </label>
+
+            {/* Select All Checkbox */}
+            <label className="flex items-center space-x-2 cursor-pointer mb-2">
               <input
-                type="text"
-                name="subject"
-                value={formData.subject}
-                onChange={handleChange}
-                className="w-full border px-3 py-2 rounded"
-                required
+                type="checkbox"
+                checked={allSelected}
+                onChange={handleSelectAllChange}
+                className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
               />
-            </div>
-          </div>
+              <span className="text-gray-800 font-semibold">Select All</span>
+            </label>
 
-          <div className="mb-4">
-            <label className="block font-medium">Message</label>
-            <textarea
-              name="message"
-              value={formData.message}
-              onChange={handleChange}
-              className="w-full border px-3 py-2 rounded"
-              required
-            />
-            <button
-              type="button"
-              onClick={handleGenerateAI}
-              className="mt-2 bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
-              disabled={loadingAI}
-            >
-              {loadingAI ? "Generating..." : "✨ Generate with AI"}
-            </button>
-          </div>
-
-          <div className="mb-4">
-            <label className="block font-medium mb-2">Select Recipients</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto border p-2 rounded">
-              {contacts.map((contact) => (
-                <label key={contact._id} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.recipients.includes(contact._id)}
-                    onChange={() => handleRecipientCheckboxChange(contact._id)}
-                  />
-                  <span>
-                    {contact.name} ({contact.email})
-                  </span>
-                </label>
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+              {contacts.length === 0 ? (
+                <p className="text-gray-500 col-span-full text-center">
+                  No contacts available. Please add contacts first.
+                </p>
+              ) : (
+                contacts.map((contact) => (
+                  <label
+                    key={contact._id}
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-purple-100 rounded-md p-1"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.recipients.includes(contact._id)}
+                      onChange={() => handleRecipientCheckboxChange(contact._id)}
+                      className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <span className="text-gray-800">{contact.name} ({contact.email})</span>
+                  </label>
+                ))
+              )}
             </div>
           </div>
 
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition"
           >
             Save Campaign
           </button>
         </form>
 
-        <div>
-          <h2 className="text-xl font-semibold mb-2">Your Campaigns</h2>
-          {campaigns.length === 0 ? (
-            <p>No campaigns found.</p>
-          ) : (
-            <ul className="space-y-4">
-              {campaigns.map((campaign) => (
-                <li key={campaign._id} className="bg-gray-100 p-4 rounded shadow">
-                  <h3 className="text-lg font-bold">{campaign.name}</h3>
-                  <p>
-                    <strong>Subject:</strong> {campaign.subject}
-                  </p>
-                  <p>
-                    <strong>Message:</strong> {campaign.message}
-                  </p>
-                  <p>
-                    <strong>Status:</strong> {campaign.status}
-                  </p>
-                  <ul className="list-disc list-inside ml-4">
-                    {campaign.recipients?.map((recipient) => (
-                      <li key={recipient._id}>
-                        {recipient.name} ({recipient.email})
-                      </li>
-                    ))}
-                  </ul>
-                  {campaign.status !== "Sent" && (
-                    <button
-                      onClick={() => handleSend(campaign._id!)}
-                      className="mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                    >
-                      Send Campaign
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="flex justify-center space-x-4 mb-6">
+          <button
+            onClick={() => setActiveTab("draft")}
+            className={`px-6 py-2 rounded-full font-semibold transition ${
+              activeTab === "draft"
+                ? "bg-blue-600 text-white shadow-lg"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            Draft Campaigns ({drafts.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("sent")}
+            className={`px-6 py-2 rounded-full font-semibold transition ${
+              activeTab === "sent"
+                ? "bg-green-600 text-white shadow-lg"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            Sent Campaigns ({sentCampaigns.length})
+          </button>
         </div>
+
+        {displayedCampaigns.length === 0 ? (
+          <p className="text-center text-gray-600">
+            {activeTab === "draft"
+              ? "No draft campaigns yet."
+              : "No sent campaigns yet."}
+          </p>
+        ) : (
+          <ul className="space-y-6">
+            {displayedCampaigns.map((campaign) => (
+              <li
+                key={campaign._id}
+                className={`rounded-lg p-5 border ${
+                  activeTab === "draft"
+                    ? "bg-white shadow-md border-gray-200"
+                    : "bg-green-50 border-green-300 shadow-inner"
+                }`}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3
+                      className={`text-xl font-semibold ${
+                        activeTab === "draft" ? "text-gray-900" : "text-green-800"
+                      }`}
+                    >
+                      {campaign.name}
+                    </h3>
+                    <p className={`${activeTab === "draft" ? "text-gray-700" : "text-green-700"} mt-1`}>
+                      <strong>Subject:</strong> {campaign.subject}
+                    </p>
+                    <p className={`${activeTab === "draft" ? "text-gray-700" : "text-green-700"} mt-2 whitespace-pre-wrap`}>
+                      {campaign.message}
+                    </p>
+                    <p className={`${activeTab === "draft" ? "text-gray-600" : "text-green-600"} mt-3 text-sm`}>
+                      <strong>Recipients:</strong> {campaign.recipients.length}
+                    </p>
+                    {activeTab === "sent" && (
+                      <p className="mt-2 text-sm font-semibold text-green-600">Status: Sent</p>
+                    )}
+                  </div>
+
+                  {activeTab === "draft" && (
+                    <div className="flex flex-col space-y-2">
+                      <button
+                        onClick={() => handleSend(campaign._id)}
+                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+                      >
+                        Send Campaign
+                      </button>
+                      <button
+                        onClick={() => handleDelete(campaign._id)}
+                        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </>
   );

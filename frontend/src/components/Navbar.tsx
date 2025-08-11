@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const userId = localStorage.getItem("userId");
+//   const userId = localStorage.getItem("userId");
 
   const handleLogout = () => {
     localStorage.removeItem("token");
