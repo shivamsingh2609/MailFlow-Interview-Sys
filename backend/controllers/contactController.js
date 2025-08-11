@@ -1,18 +1,13 @@
-// controllers/contactController.js
+
 import mongoose from "mongoose";
 import Contact from "../models/Contact.js";
 import User from "../models/user.js";
 
-/**
- * GET /api/contacts?userId=...
- * Only returns non-deleted contacts (isDeleted: false).
- */
 export const getContacts = async (req, res) => {
   try {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID is required" });
 
-    // normalize userId -> ObjectId
     let creatorId = userId;
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       const user = await User.findOne({ email: userId });
@@ -32,19 +27,13 @@ export const getContacts = async (req, res) => {
   }
 };
 
-/**
- * POST /api/contacts
- * Create contact; prevents duplicates (case-insensitive) among non-deleted contacts.
- * If a deleted contact exists with the same email, restore it instead of creating new.
- */
+
 export const createContact = async (req, res) => {
   try {
     const { name, email, userId } = req.body;
     if (!name || !email || !userId) {
       return res.status(400).json({ error: "Name, email, and userId are required" });
     }
-
-    // Normalize creatorId
     let creatorId = userId;
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       const user = await User.findOne({ email: userId });
@@ -54,7 +43,7 @@ export const createContact = async (req, res) => {
       creatorId = new mongoose.Types.ObjectId(userId);
     }
 
-    // Check if a non-deleted contact already exists
+  
     const existingActive = await Contact.findOne({
       email: { $regex: `^${email}$`, $options: "i" },
       createdBy: creatorId,
@@ -64,7 +53,6 @@ export const createContact = async (req, res) => {
       return res.status(400).json({ error: "Contact with this email already exists" });
     }
 
-    // If a deleted contact exists with same email, restore it
     const existingDeleted = await Contact.findOneAndUpdate(
       {
         email: { $regex: `^${email}$`, $options: "i" },
@@ -78,7 +66,6 @@ export const createContact = async (req, res) => {
       return res.status(200).json(existingDeleted);
     }
 
-    // Else, create new
     const contact = new Contact({ name, email, createdBy: creatorId });
     await contact.save();
 
@@ -89,10 +76,6 @@ export const createContact = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/contacts/:id
- * Update contact — checks duplicates excluding current contact and ignoring deleted ones.
- */
 export const updateContact = async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,7 +84,6 @@ export const updateContact = async (req, res) => {
       return res.status(400).json({ error: "Name, email, and userId are required" });
     }
 
-    // Normalize creatorId
     let creatorId = userId;
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       const user = await User.findOne({ email: userId });
@@ -111,7 +93,6 @@ export const updateContact = async (req, res) => {
       creatorId = new mongoose.Types.ObjectId(userId);
     }
 
-    // Duplicate check excluding current contact id
     const duplicate = await Contact.findOne({
       email: { $regex: `^${email}$`, $options: "i" },
       createdBy: creatorId,
@@ -139,14 +120,10 @@ export const updateContact = async (req, res) => {
   }
 };
 
-/**
- * DELETE /api/contacts/:id?userId=...
- * Soft delete — keeps contact in all campaigns (Draft, Sent, Completed).
- */
 export const deleteContact = async (req, res) => {
   try {
-    const { id } = req.params; // contactId
-    const { userId } = req.query; // can be email or ObjectId
+    const { id } = req.params; 
+    const { userId } = req.query; 
 
     if (!id) {
       return res.status(400).json({ message: "Contact ID is required" });
@@ -155,7 +132,6 @@ export const deleteContact = async (req, res) => {
       return res.status(400).json({ message: "userId is required" });
     }
 
-    // Soft delete (set isDeleted = true)
     const contact = await Contact.findByIdAndUpdate(
       id,
       { isDeleted: true },
