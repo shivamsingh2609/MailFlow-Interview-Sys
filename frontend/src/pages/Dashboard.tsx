@@ -90,13 +90,12 @@ const Dashboard: React.FC = () => {
               <p className="mt-2 text-4xl font-extrabold text-green-900">{campaignCount}</p>
             </div>
 
-            {/* Draft Campaigns */}
+
             <div className="bg-yellow-100 p-6 rounded-lg shadow hover:shadow-lg transition-shadow text-center">
               <h3 className="text-lg font-semibold text-yellow-800">Draft Campaigns</h3>
               <p className="mt-2 text-4xl font-extrabold text-yellow-900">{draftCount}</p>
             </div>
 
-            {/* Emails Sent */}
             <div className="bg-blue-100 p-6 rounded-lg shadow hover:shadow-lg transition-shadow text-center">
               <h3 className="text-lg font-semibold text-blue-800">Emails Sent</h3>
               <p className="mt-2 text-4xl font-extrabold text-blue-900">{emailsSent}</p>

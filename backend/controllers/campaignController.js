@@ -119,13 +119,13 @@ export const generateEmail = async (req, res) => {
 export const deleteCampaign = async (req, res) => {
   try {
     const campaignId = req.params.id;
-    const userId = req.query.userId; // or get from req.user.id if using auth middleware
+    const userId = req.query.userId; 
 
     if (!campaignId || !userId) {
       return res.status(400).json({ error: "Campaign ID and User ID are required" });
     }
 
-    // Find and delete the campaign only if it belongs to the user
+   
     const deletedCampaign = await Campaign.findOneAndDelete({
       _id: campaignId,
       createdBy: userId,

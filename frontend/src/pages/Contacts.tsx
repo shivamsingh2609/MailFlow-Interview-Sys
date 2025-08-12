@@ -112,7 +112,7 @@ export default function Contacts() {
       <div className="max-w-3xl mx-auto p-6">
         <h1 className="text-3xl font-extrabold mb-6 text-center text-gray-900">Your Contacts</h1>
 
-        {/* Form */}
+       
         <form
           onSubmit={handleSubmit}
           className="bg-white shadow-md rounded-lg p-6 mb-8"
@@ -162,7 +162,7 @@ export default function Contacts() {
           </button>
         </form>
 
-        {/* Contact list */}
+
         {contacts.length === 0 ? (
           <p className="text-center text-gray-500">No contacts yet. Add someone you know!</p>
         ) : (
@@ -196,7 +196,7 @@ export default function Contacts() {
           </ul>
         )}
 
-        {/* Delete confirmation modal */}
+        
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">

@@ -70,7 +70,6 @@ const Campaigns: React.FC = () => {
     });
   };
 
-  // Select All logic
   const allSelected =
     contacts.length > 0 && formData.recipients.length === contacts.length;
 
@@ -245,7 +244,7 @@ const Campaigns: React.FC = () => {
               Who should receive this campaign?
             </label>
 
-            {/* Select All Checkbox */}
+            
             <label className="flex items-center space-x-2 cursor-pointer mb-2">
               <input
                 type="checkbox"
