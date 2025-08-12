@@ -110,7 +110,7 @@ export default function Contacts() {
     <>
       <Navbar />
       <div className="max-w-3xl mx-auto p-6">
-        <h1 className="text-3xl font-extrabold mb-6 text-center text-gray-900">Contacts</h1>
+        <h1 className="text-3xl font-extrabold mb-6 text-center text-gray-900">Your Contacts</h1>
 
         {/* Form */}
         <form
@@ -126,7 +126,7 @@ export default function Contacts() {
               id="name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Enter name"
+              placeholder="What's their name?"
               className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
               disabled={loading}
@@ -142,7 +142,7 @@ export default function Contacts() {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="Enter email"
+              placeholder="What's their email address?"
               className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
               disabled={loading}
@@ -164,7 +164,7 @@ export default function Contacts() {
 
         {/* Contact list */}
         {contacts.length === 0 ? (
-          <p className="text-center text-gray-500">No contacts found. Add some!</p>
+          <p className="text-center text-gray-500">No contacts yet. Add someone you know!</p>
         ) : (
           <ul className="space-y-4">
             {contacts.map((c) => (
@@ -200,8 +200,8 @@ export default function Contacts() {
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
-              <h2 className="text-xl font-semibold mb-4">Confirm Delete</h2>
-              <p className="mb-6">Are you sure you want to delete this contact? This action cannot be undone.</p>
+              <h2 className="text-xl font-semibold mb-4">Delete Contact?</h2>
+              <p className="mb-6">Are you sure you want to remove this contact? This can't be undone.</p>
               <div className="flex justify-end space-x-4">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}

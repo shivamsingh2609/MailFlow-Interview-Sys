@@ -74,14 +74,13 @@ export default function Register() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 via-white to-blue-100 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
         <h2 className="text-3xl font-extrabold text-center text-gray-800 mb-6">
-          Create your MailFlow account
+          Join MailFlow and Start Your Journey 🚀
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-         
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
-              Username
+              Choose a Username
             </label>
             <input
               type="text"
@@ -90,14 +89,13 @@ export default function Register() {
               value={userData.username}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Username"
+              placeholder="Pick a username you'll remember"
             />
           </div>
 
-        
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
-              Email address
+              Your Email Address
             </label>
             <input
               type="email"
@@ -112,7 +110,7 @@ export default function Register() {
 
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
-              Password
+              Create a Password
             </label>
             <input
               type="password"
@@ -121,14 +119,13 @@ export default function Register() {
               value={userData.password}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="••••••••"
+              placeholder="Make it strong!"
             />
           </div>
 
-          {/* Confirm Password */}
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
-              Confirm Password
+              Confirm Your Password
             </label>
             <input
               type="password"
@@ -137,11 +134,10 @@ export default function Register() {
               value={userData.confirmPassword}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="••••••••"
+              placeholder="Type your password again"
             />
           </div>
 
-          {/* Error Message */}
           {errorMsg && (
             <p className="text-red-500 text-sm text-center">{errorMsg}</p>
           )}
@@ -150,14 +146,14 @@ export default function Register() {
             type="submit"
             className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
           >
-            Register
+            Sign Up
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          Already have an account?{" "}
+          Already have an account?{' '}
           <Link to="/" className="text-blue-600 font-medium hover:underline">
-            Login here
+            Log in here
           </Link>
         </p>
       </div>

@@ -78,13 +78,13 @@ const Dashboard: React.FC = () => {
           </h1>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-10">
-            {/* Total Contacts */}
+         
             <div className="bg-purple-100 p-6 rounded-lg shadow hover:shadow-lg transition-shadow text-center">
               <h3 className="text-lg font-semibold text-purple-800">Total Contacts</h3>
               <p className="mt-2 text-4xl font-extrabold text-purple-900">{contactCount}</p>
             </div>
 
-            {/* Sent Campaigns */}
+           
             <div className="bg-green-100 p-6 rounded-lg shadow hover:shadow-lg transition-shadow text-center">
               <h3 className="text-lg font-semibold text-green-800">Sent Campaigns</h3>
               <p className="mt-2 text-4xl font-extrabold text-green-900">{campaignCount}</p>

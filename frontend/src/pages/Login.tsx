@@ -36,13 +36,13 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-purple-100 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
         <h2 className="text-3xl font-extrabold text-center text-gray-800 mb-6">
-          Sign in to MailFlow
+          Welcome Back to MailFlow 👋
         </h2>
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
-              Email address
+              Your Email Address
             </label>
             <input
               type="email"
@@ -56,7 +56,7 @@ export default function Login() {
 
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
-              Password
+              Your Password
             </label>
             <input
               type="password"
@@ -64,7 +64,7 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="••••••••"
+              placeholder="Enter your password"
             />
           </div>
 
@@ -76,17 +76,17 @@ export default function Login() {
             type="submit"
             className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
           >
-            Login
+            Log In
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          Don’t have an account?{" "}
+          New to MailFlow?{' '}
           <Link
             to="/register"
             className="text-blue-600 font-medium hover:underline"
           >
-            Register here
+            Create an account
           </Link>
         </p>
       </div>

@@ -34,9 +34,16 @@ export default function PublicRoute({ children }: PublicRouteProps) {
   }, []);
 
   if (loading) {
-    return <p>Loading...</p>;
+    return (
+      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+        <p style={{ fontSize: '1.2rem', color: '#6B21A8' }}>Just a moment, we’re getting things ready for you...</p>
+      </div>
+    );
   }
 
-
-  return isLoggedIn ? <Navigate to="/dashboard" replace /> : <>{children}</>;
+  return isLoggedIn ? (
+    <Navigate to="/dashboard" replace />
+  ) : (
+    <>{children}</>
+  );
 }

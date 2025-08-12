@@ -34,7 +34,11 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   }, []);
 
   if (loading) {
-    return <p>Loading...</p>;
+    return (
+      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+        <p style={{ fontSize: '1.2rem', color: '#2563EB' }}>Verifying your access, please wait a moment...</p>
+      </div>
+    );
   }
 
   return isValid ? <>{children}</> : <Navigate to="/" replace />;

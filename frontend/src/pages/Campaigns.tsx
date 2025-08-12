@@ -195,16 +195,16 @@ const Campaigns: React.FC = () => {
       <Navbar />
       <div className="container mx-auto p-6 max-w-5xl">
         <h1 className="text-3xl font-extrabold mb-6 text-center text-gray-900">
-          Campaigns Manager
+          Welcome to Your Campaigns Manager
         </h1>
 
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-10">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Create New Campaign</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Let's Create a New Campaign</h2>
 
           <input
             type="text"
             name="name"
-            placeholder="Campaign Name"
+            placeholder="Give your campaign a friendly name"
             value={formData.name}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-3 w-full mb-4 focus:outline-none focus:ring-2 focus:ring-purple-600"
@@ -213,7 +213,7 @@ const Campaigns: React.FC = () => {
           <input
             type="text"
             name="subject"
-            placeholder="Subject"
+            placeholder="What's your email subject?"
             value={formData.subject}
             onChange={handleChange}
             className="border border-gray-300 rounded-md p-3 w-full mb-4 focus:outline-none focus:ring-2 focus:ring-purple-600"
@@ -221,7 +221,7 @@ const Campaigns: React.FC = () => {
           />
           <textarea
             name="message"
-            placeholder="Message"
+            placeholder="Write your message here..."
             value={formData.message}
             onChange={handleChange}
             rows={5}
@@ -237,12 +237,12 @@ const Campaigns: React.FC = () => {
               loadingAI ? "bg-purple-400 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"
             }`}
           >
-            {loadingAI ? "Generating AI Content..." : "✨ Generate with AI"}
+            {loadingAI ? "AI is writing your message..." : "✨ Let AI help write your email"}
           </button>
 
           <div className="mb-6">
             <label className="block font-semibold mb-2 text-gray-700">
-              Select Recipients
+              Who should receive this campaign?
             </label>
 
             {/* Select All Checkbox */}
@@ -253,13 +253,13 @@ const Campaigns: React.FC = () => {
                 onChange={handleSelectAllChange}
                 className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
               />
-              <span className="text-gray-800 font-semibold">Select All</span>
+              <span className="text-gray-800 font-semibold">Select Everyone</span>
             </label>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
               {contacts.length === 0 ? (
                 <p className="text-gray-500 col-span-full text-center">
-                  No contacts available. Please add contacts first.
+                  You don't have any contacts yet. Add some to get started!
                 </p>
               ) : (
                 contacts.map((contact) => (
@@ -284,7 +284,7 @@ const Campaigns: React.FC = () => {
             type="submit"
             className="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition"
           >
-            Save Campaign
+            Save This Campaign
           </button>
         </form>
 
@@ -297,7 +297,7 @@ const Campaigns: React.FC = () => {
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            Draft Campaigns ({drafts.length})
+            Drafts ({drafts.length})
           </button>
           <button
             onClick={() => setActiveTab("sent")}
@@ -307,15 +307,15 @@ const Campaigns: React.FC = () => {
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            Sent Campaigns ({sentCampaigns.length})
+            Sent ({sentCampaigns.length})
           </button>
         </div>
 
         {displayedCampaigns.length === 0 ? (
           <p className="text-center text-gray-600">
             {activeTab === "draft"
-              ? "No draft campaigns yet."
-              : "No sent campaigns yet."}
+              ? "You haven’t created any draft campaigns yet."
+              : "No campaigns have been sent yet."}
           </p>
         ) : (
           <ul className="space-y-6">
@@ -347,7 +347,7 @@ const Campaigns: React.FC = () => {
                       <strong>Recipients:</strong> {campaign.recipients.length}
                     </p>
                     {activeTab === "sent" && (
-                      <p className="mt-2 text-sm font-semibold text-green-600">Status: Sent</p>
+                      <p className="mt-2 text-sm font-semibold text-green-600">Status: Sent 🎉</p>
                     )}
                   </div>
 
@@ -357,7 +357,7 @@ const Campaigns: React.FC = () => {
                         onClick={() => handleSend(campaign._id)}
                         className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
                       >
-                        Send Campaign
+                        Send Now
                       </button>
                       <button
                         onClick={() => handleDelete(campaign._id)}
