@@ -24,6 +24,12 @@ In Phase 1, the following features were implemented:
 - **Styling**: TailwindCSS
 
 ---
+## 📚 API Documentation
+The full API documentation is available via Swagger UI.
+
+- **Local Development**: [http://localhost:5000/api-docs](http://localhost:5000/api-docs)
+- **JSON Spec**: [http://localhost:5000/swagger.json](http://localhost:5000/swagger.json)
+
 ## 📸 Screenshots/Demo
 Login Page
 <img width="885" height="734" alt="login" src="https://github.com/user-attachments/assets/dba68fb5-340a-4e4e-b502-25f3395e573b" />
