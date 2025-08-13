@@ -24,6 +24,20 @@ In Phase 1, the following features were implemented:
 - **Styling**: TailwindCSS
 
 ---
+## 📸 Screenshots/Demo
+Login Page
+<img width="885" height="734" alt="login" src="https://github.com/user-attachments/assets/dba68fb5-340a-4e4e-b502-25f3395e573b" />
+Register Page
+<img width="865" height="895" alt="register" src="https://github.com/user-attachments/assets/db8ce087-5249-4014-a681-27bcf278c5bb" />
+Dashboard Page
+<img width="1893" height="898" alt="dashboard" src="https://github.com/user-attachments/assets/3bff6150-b5c8-49c2-9b1f-42682f882649" />
+Contacts Page
+<img width="1904" height="884" alt="contacts" src="https://github.com/user-attachments/assets/98f982c1-b27a-4152-8698-e9ddd45e40d9" />
+Campaigns Page
+<img width="1904" height="906" alt="campaigns" src="https://github.com/user-attachments/assets/50e5d87a-f74a-4809-8534-e6a5dfb85351" />
+<img width="1435" height="823" alt="image" src="https://github.com/user-attachments/assets/937a8fbd-f61d-4ca5-8f77-bc665ad943a8" />
+
+
 
 ## 📂 Folder Structure
 ```plaintext
@@ -53,22 +67,6 @@ mailflow/
 ├── screenshots/            # Screenshots for README
 └── README.md
 
-## 📸 Screenshots (Phase 1)
-
-### 🔐 Login Page
-![Login Page](./screenshots/login.png)
-
-### 📝 Register Page
-![Register Page](./screenshots/register.png)
-
-### 📊 Dashboard
-![Dashboard](./screenshots/dashboard.png)
-
-### 📇 Contacts Page
-![Contacts Page](./screenshots/contacts.png)
-
-### 📢 Campaigns Page
-![Campaigns Page](./screenshots/campaigns.png)
 
 
 ---
