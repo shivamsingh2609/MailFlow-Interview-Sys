@@ -1,8 +1,9 @@
-
 import nodemailer from "nodemailer";
 import Campaign from "../models/Campaign.js";
 import User from "../models/user.js";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
+import dns from "dns";
+import emailExistence from "email-existence";
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
@@ -13,13 +14,44 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+function isEmailFormatValid(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+
+function hasMXRecords(email) {
+  return new Promise((resolve) => {
+    const domain = email.split("@")[1];
+    dns.resolveMx(domain, (err, addresses) => {
+      if (err || !addresses || addresses.length === 0) {
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    });
+  });
+}
+
+function checkMailbox(email) {
+  return new Promise((resolve) => {
+    emailExistence.check(email, (err, res) => {
+      if (err) {
+        console.error("SMTP check error:", err);
+        resolve(false);
+      } else {
+        resolve(res); 
+      }
+    });
+  });
+}
+
 export const sendMailService = async (ownerUserId, campaignId) => {
   try {
     const campaign = await Campaign.findOne({
       _id: campaignId,
       createdBy: ownerUserId,
       status: "Draft",
-    }).populate("recipients", "email");
+    });
 
     if (!campaign || !campaign.recipients?.length) {
       return { success: false, message: "No recipients found for this campaign" };
@@ -37,7 +69,6 @@ ${campaign.message}
 ---
 Sent by: ${user.username} (${user.email})
     `;
-
     const bodyHTML = `
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;">
   <div style="background-color: #4CAF50; padding: 15px; color: white; text-align: center; font-size: 20px; font-weight: bold;">
@@ -53,17 +84,53 @@ Sent by: ${user.username} (${user.email})
 </div>
     `;
 
-    const emailsToSend = campaign.recipients.map((c) => c.email);
+    let failedEmails = [];
+    let sentEmails = [];
 
-    for (const email of emailsToSend) {
-      console.log(`Sending to ${email}`);
-      await transporter.sendMail({
-        from: `"${user.username}" <${process.env.MAIL}>`,
-        to: email,
-        subject,
-        text: bodyText,
-        html: bodyHTML,
-      });
+    for (const recipient of campaign.recipients) {
+      const email = recipient.email;
+
+      if (!isEmailFormatValid(email)) {
+        failedEmails.push(`${email} (Invalid format)`);
+        continue;
+      }
+
+      const hasMX = await hasMXRecords(email);
+      if (!hasMX) {
+        failedEmails.push(`${email} (No MX records found)`);
+        continue;
+      }
+
+      
+      const exists = await checkMailbox(email);
+      if (!exists) {
+        failedEmails.push(`${email} (Mailbox not found)`);
+        continue;
+      }
+
+      
+      try {
+        await transporter.sendMail({
+          from: `"${user.username}" <${process.env.MAIL}>`,
+          to: email,
+          subject,
+          text: bodyText,
+          html: bodyHTML,
+        });
+        sentEmails.push(email);
+      } catch (err) {
+        console.error(`❌ Failed to send to ${email}:`, err.message);
+        failedEmails.push(`${email} (Send error: ${err.message})`);
+      }
+    }
+
+    if (failedEmails.length > 0) {
+      campaign.status = sentEmails.length > 0 ? "Partial" : "Failed";
+      await campaign.save();
+      return {
+        success: false,
+        message: `Failed: ${failedEmails.join(", ")} | Sent: ${sentEmails.join(", ")}`,
+      };
     }
 
     campaign.status = "Sent";
@@ -71,7 +138,7 @@ Sent by: ${user.username} (${user.email})
 
     return {
       success: true,
-      message: `Emails sent successfully to ${emailsToSend.length} recipients`,
+      message: `Emails sent successfully to ${sentEmails.length} recipients`,
     };
   } catch (error) {
     console.error("Error sending campaign emails:", error);

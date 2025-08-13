@@ -1,4 +1,4 @@
-
+// models/Campaign.js
 import mongoose from 'mongoose';
 
 const campaignSchema = new mongoose.Schema({
@@ -12,7 +12,7 @@ const campaignSchema = new mongoose.Schema({
       email: String
     }
   ],
-  status: { type: String, enum: ['Draft', 'Sent'], default: 'Draft' },
+  status: { type: String, enum: ['Draft', 'Sent', 'Failed'], default: 'Draft' }, 
   createdAt: { type: Date, default: Date.now },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 });

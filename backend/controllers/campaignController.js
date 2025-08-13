@@ -73,6 +73,7 @@ export const createCampaign = async (req, res) => {
   }
 };
 
+
 export const sendCampaign = async (req, res) => {
   try {
     const { id: campaignId } = req.params;
@@ -87,18 +88,22 @@ export const sendCampaign = async (req, res) => {
       return res.status(400).json({ message: "No recipients found for this campaign" });
     }
 
+   
     const result = await sendMailService(campaign.createdBy, campaignId);
 
+    const updatedCampaign = await Campaign.findById(campaignId);
+
     if (result.success) {
-      res.status(200).json({ message: result.message, campaign });
+      return res.status(200).json({ message: result.message, campaign: updatedCampaign });
     } else {
-      res.status(400).json({ message: result.message });
+      return res.status(400).json({ message: result.message, campaign: updatedCampaign });
     }
   } catch (error) {
     console.error("Error sending campaign:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 export const generateEmail = async (req, res) => {
   try {
