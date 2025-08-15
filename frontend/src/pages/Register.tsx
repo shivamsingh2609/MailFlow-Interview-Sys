@@ -19,15 +19,15 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (userData.password !== userData.confirmPassword) {
       setErrorMsg("Passwords do not match");
       return;
     }
-
+    
+    console.log(process.env.REACT_APP_API_BASE_URL)
     try {
       const response = await apiClient.post(
-        "http://localhost:5000/api/auth/register",
+        `${process.env.REACT_APP_API_BASE_URL}/api/auth/register`,
         {
           username: userData.username.trim(),
           email: userData.email.trim(),

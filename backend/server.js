@@ -16,7 +16,15 @@ dotenv.config();
 const app = express();
 
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    "https://mailflow-interview-sys-production-f899.up.railway.app", // backend domain
+    // frontend domain in production
+    "http://localhost:3000" // dev frontend
+  ]
+}));
+
+
 app.use(express.json());
 const swaggerSpec = swaggerJSDoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

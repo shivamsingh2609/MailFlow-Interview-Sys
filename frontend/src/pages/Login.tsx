@@ -15,7 +15,7 @@ export default function Login() {
         email :email.trim() ,
         password :password,
       }
-      const res = await apiClient.post("http://localhost:5000/api/auth/", loginData);
+      const res = await apiClient.post(`${process.env.REACT_APP_API_BASE_URL}/api/auth/`, loginData);
       const token =res.data.token ;
       const user = res.data.user;
       if (user && user._id) {
