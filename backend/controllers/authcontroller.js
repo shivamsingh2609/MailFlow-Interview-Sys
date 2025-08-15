@@ -10,7 +10,7 @@ const createToken = (id) => {
 export const registerUser = async (req, res) => {
   const { username, email, password } = req.body;
 
-  console.log("Incoming registration data:", req.body);
+  // console.log("Incoming registration data:", req.body);
 
   try {
     const user = await User.create({ username, email, password });
@@ -27,7 +27,7 @@ export const registerUser = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Registration error:", err);
+    // console.error("Registration error:", err);
 
     let message = "Registration failed";
 
@@ -68,7 +68,7 @@ export const loginUser = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Login error:", err);
+    // console.error("Login error:", err);
     res.status(400).json({ message: err.message });
   }
 };

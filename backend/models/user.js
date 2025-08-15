@@ -20,6 +20,8 @@ const userSchema = new mongoose.Schema({
     refreshToken: { type: String }, 
     connected: { type: Boolean, default: false }, 
   },
+  otp: { type: String },
+  otpExpiry: { type: Date },
 });
 
 userSchema.pre("save", async function (next) {

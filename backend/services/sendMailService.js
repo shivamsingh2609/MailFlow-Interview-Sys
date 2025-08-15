@@ -36,7 +36,7 @@ function checkMailbox(email) {
   return new Promise((resolve) => {
     emailExistence.check(email, (err, res) => {
       if (err) {
-        console.error("SMTP check error:", err);
+        // console.error("SMTP check error:", err);
         resolve(false);
       } else {
         resolve(res); 
@@ -52,7 +52,7 @@ export const sendMailService = async (ownerUserId, campaignId) => {
       createdBy: ownerUserId,
       status: "Draft",
     });
-
+    console.log("Campaign found:", campaign);
     if (!campaign || !campaign.recipients?.length) {
       return { success: false, message: "No recipients found for this campaign" };
     }
@@ -102,11 +102,11 @@ Sent by: ${user.username} (${user.email})
       }
 
       
-      const exists = await checkMailbox(email);
-      if (!exists) {
-        failedEmails.push(`${email} (Mailbox not found)`);
-        continue;
-      }
+      // const exists = await checkMailbox(email);
+      // if (!exists) {
+      //   failedEmails.push(`${email} (Mailbox not found)`);
+      //   continue;
+      // }
 
       
       try {
@@ -119,7 +119,7 @@ Sent by: ${user.username} (${user.email})
         });
         sentEmails.push(email);
       } catch (err) {
-        console.error(`❌ Failed to send to ${email}:`, err.message);
+        // console.error(`❌ Failed to send to ${email}:`, err.message);
         failedEmails.push(`${email} (Send error: ${err.message})`);
       }
     }
@@ -141,7 +141,7 @@ Sent by: ${user.username} (${user.email})
       message: `Emails sent successfully to ${sentEmails.length} recipients`,
     };
   } catch (error) {
-    console.error("Error sending campaign emails:", error);
+    // console.error("Error sending campaign emails:", error);
     return { success: false, message: "Error sending campaign emails" };
   }
 };

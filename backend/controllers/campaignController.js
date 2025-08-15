@@ -3,6 +3,7 @@ import Campaign from "../models/Campaign.js";
 import User from "../models/user.js";
 import { sendMailService } from "../services/sendMailService.js";
 import { generateEmailContent } from "../services/aiService.js"; 
+import Contact from "../models/Contact.js";
 
 export const getCampaigns = async (req, res) => {
   try {
@@ -25,59 +26,86 @@ export const getCampaigns = async (req, res) => {
 
     res.status(200).json(campaigns);
   } catch (error) {
-    console.error("Error fetching campaigns:", error);
+    // console.error("Error fetching campaigns:", error);
     res.status(500).json({ message: "Server error while fetching campaigns" });
   }
 };
 
+
 export const createCampaign = async (req, res) => {
   try {
-    const { name, subject, message, recipients, createdBy } = req.body;
+    const { name, subject, message, recipients } = req.body;
+    const user = req.user; // set by auth middleware
 
-    if (!createdBy) {
-      return res.status(400).json({ message: "createdBy field is required" });
-    }
-    if (!Array.isArray(recipients) || recipients.length === 0) {
-      return res.status(400).json({ message: "Recipients must be a non-empty array of contact snapshots" });
+    if (!name || !subject || !message || !Array.isArray(recipients) || recipients.length === 0) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    const user = mongoose.Types.ObjectId.isValid(createdBy)
-      ? await User.findById(createdBy)
-      : await User.findOne({ email: createdBy });
+    let formattedRecipients = [];
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found for createdBy" });
-    }
+    // Case 1: recipients are just ObjectId strings
+    if (
+      typeof recipients[0] === "string" ||
+      mongoose.Types.ObjectId.isValid(recipients[0])
+    ) {
+      const contacts = await Contact.find({ _id: { $in: recipients } });
 
-    for (const r of recipients) {
-      if (!r.contactId || !r.name || !r.email) {
-        return res.status(400).json({ message: "Each recipient must include contactId, name, and email" });
+      if (contacts.length === 0) {
+        return res.status(400).json({ message: "No valid contacts found" });
       }
+
+      formattedRecipients = contacts.map(c => ({
+        contactId: c._id,
+        name: c.name,
+        email: c.email
+      }));
+
+    // Case 2: recipients are already objects
+    } else if (recipients[0]?.contactId) {
+      formattedRecipients = recipients.map(r => ({
+        contactId: r.contactId,
+        name: r.name,
+        email: r.email
+      }));
+
+    } else {
+      return res.status(400).json({ message: "Invalid recipients format" });
     }
 
+    // Create and save campaign
     const newCampaign = new Campaign({
       name,
       subject,
       message,
-      recipients, 
+      recipients: formattedRecipients,
       status: "Draft",
-      createdBy: user._id,
+      createdBy: user._id
     });
 
-    const savedCampaign = await newCampaign.save();
+    await newCampaign.save();
 
-    res.status(201).json(savedCampaign);
+    res.status(201).json({
+      message: "Campaign created successfully",
+      campaign: newCampaign
+    });
+
   } catch (error) {
     console.error("Error creating campaign:", error);
-    res.status(500).json({ message: "Server error while creating campaign" });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
   }
 };
+
+
+
 
 
 export const sendCampaign = async (req, res) => {
   try {
     const { id: campaignId } = req.params;
-
+    console.log("Sending campaign with ID:", campaignId);
     const campaign = await Campaign.findById(campaignId);
 
     if (!campaign) {
@@ -99,7 +127,7 @@ export const sendCampaign = async (req, res) => {
       return res.status(400).json({ message: result.message, campaign: updatedCampaign });
     }
   } catch (error) {
-    console.error("Error sending campaign:", error);
+    // console.error("Error sending campaign:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -116,7 +144,7 @@ export const generateEmail = async (req, res) => {
 
     res.status(200).json({ content: aiContent });
   } catch (error) {
-    console.error("Error generating email content:", error);
+    // console.error("Error generating email content:", error);
     res.status(500).json({ message: "Failed to generate email content" });
   }
 };
@@ -142,7 +170,7 @@ export const deleteCampaign = async (req, res) => {
 
     res.json({ message: "Campaign deleted successfully" });
   } catch (error) {
-    console.error("Error deleting campaign:", error);
+    // console.error("Error deleting campaign:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

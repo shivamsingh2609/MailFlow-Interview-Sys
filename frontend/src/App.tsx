@@ -1,11 +1,12 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Contacts from "./pages/Contacts";
 import Campaigns from "./pages/Campaigns";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
-import PublicRoute from "./components/PublicRoute"; 
+import PublicRoute from "./components/PublicRoute";
+import ForgotPasswordFlow from "./pages/ForgotPasswordFlow"; 
 
 export default function App() {
   return (
@@ -27,8 +28,14 @@ export default function App() {
             </PublicRoute>
           }
         />
-
-    
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <ForgotPasswordFlow />
+            </PublicRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={

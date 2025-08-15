@@ -79,6 +79,10 @@ export default function Login() {
             Log In
           </button>
         </form>
+        <a href="/forgot-password" className="text-sm underline">
+  Forgot password?
+</a>
+
 
         <p className="mt-6 text-center text-sm text-gray-600">
           New to MailFlow?{' '}

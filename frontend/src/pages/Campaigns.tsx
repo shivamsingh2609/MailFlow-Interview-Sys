@@ -1,19 +1,54 @@
-import React, { useEffect, useState } from "react";
+// src/pages/Campaigns.tsx
+// src/pages/Campaigns.tsx
+import React, { useEffect, useState, useRef } from "react";
 import Navbar from "../components/Navbar";
 import apiClient from "../api/axiosInstance";
-import toast, { Toaster } from "react-hot-toast"; // For toast notifications
+import toast, { Toaster } from "react-hot-toast";
+
+// ✅ Add SpeechRecognition typings here (so we don't need @types/w3c-web-speech)
+declare global {
+  interface SpeechRecognition extends EventTarget {
+    start(): void;
+    stop(): void;
+    abort(): void;
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    onresult: (event: SpeechRecognitionEvent) => void;
+    onerror: (event: any) => void;
+    onend: () => void;
+  }
+
+  interface SpeechRecognitionEvent extends Event {
+    results: SpeechRecognitionResultList;
+  }
+
+  var SpeechRecognition: {
+    prototype: SpeechRecognition;
+    new (): SpeechRecognition;
+  };
+
+  var webkitSpeechRecognition: {
+    prototype: SpeechRecognition;
+    new (): SpeechRecognition;
+  };
+}
 
 interface Contact {
   _id: string;
   name: string;
   email: string;
 }
-
+interface AIResponse {
+  name: string;
+  subject: string;
+  message: string;
+}
 interface Campaign {
   _id: string;
   name: string;
   subject: string;
-  message: string;
+  message: string; // HTML allowed
   recipients: {
     contactId: string;
     name: string;
@@ -35,7 +70,10 @@ const Campaigns: React.FC = () => {
     recipients: [] as string[],
   });
   const [loadingAI, setLoadingAI] = useState(false);
+  const [listening, setListening] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("draft");
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
   const userId = localStorage.getItem("userId");
 
   const fetchCampaigns = () => {
@@ -114,7 +152,8 @@ const Campaigns: React.FC = () => {
         createdBy: userId,
       })
       .then((res) => {
-        setCampaigns((prev) => [...prev, res.data]);
+        console.log("Campaign created:", res.data);
+        setCampaigns((prev) => [...prev, res.data.campaign]);
         setFormData({ name: "", subject: "", message: "", recipients: [] });
         setActiveTab("draft");
         toast.success("Campaign created successfully!");
@@ -200,6 +239,81 @@ const Campaigns: React.FC = () => {
     }
   };
 
+  // 🎙️ Voice → AI generation
+// 🎙️ Voice → AI generation
+const handleVoiceGenerate = () => {
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    toast.error("Speech recognition is not supported in this browser.");
+    return;
+  }
+
+  const recognition: SpeechRecognition = new SpeechRecognition();
+  recognitionRef.current = recognition;
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = "en-US";
+
+  recognition.onresult = async (event: SpeechRecognitionEvent) => {
+    const transcript = event.results[0][0].transcript;
+    try {
+      setListening(false);
+      toast.loading("Generating campaign from voice...", { id: "voiceGen" });
+
+      const { data } = await apiClient.post(
+        "http://localhost:5000/api/campaigns/generate",
+        { prompt: transcript }
+      );
+
+      // Parse JSON if it's a string
+      let aiResult: any;
+      if (typeof data === "string") {
+        try {
+          aiResult = JSON.parse(data);
+        } catch {
+          throw new Error("Invalid AI response format");
+        }
+      } else {
+        aiResult = data;
+      }
+
+      // Extract from content
+      const { name, subject, message } = aiResult.content || {};
+
+      console.log("AI response:", name, subject, message);
+
+      setFormData((prev) => ({
+        ...prev,
+        name: name || prev.name,
+        subject: subject || prev.subject,
+        message: message || prev.message,
+      }));
+
+      toast.success("Form filled from your voice input!", { id: "voiceGen" });
+    } catch (e) {
+      console.error("Voice AI generation error:", e);
+      toast.error("Failed to generate from voice.", { id: "voiceGen" });
+    }
+  };
+
+  recognition.onerror = () => {
+    setListening(false);
+    toast.error("Speech recognition error.");
+  };
+  recognition.onend = () => setListening(false);
+
+  recognition.start();
+  setListening(true);
+};
+
+
+  const stopVoice = () => {
+    recognitionRef.current?.stop();
+    setListening(false);
+  };
+
   const drafts = campaigns.filter(
     (c) => c.status !== "Sent" && c.status !== "Failed" && c.status !== "Sending"
   );
@@ -230,50 +344,84 @@ const Campaigns: React.FC = () => {
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">
             Create a New Campaign
           </h2>
-          <input
-            type="text"
-            name="name"
-            placeholder="Campaign name"
-            value={formData.name}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-md p-3 w-full mb-4 focus:outline-none focus:ring-2 focus:ring-purple-600"
-            required
-          />
-          <input
-            type="text"
-            name="subject"
-            placeholder="Subject"
-            value={formData.subject}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-md p-3 w-full mb-4 focus:outline-none focus:ring-2 focus:ring-purple-600"
-            required
-          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              type="text"
+              name="name"
+              placeholder="Campaign name"
+              value={formData.name}
+              onChange={handleChange}
+              className="border border-gray-300 rounded-md p-3 w-full focus:outline-none focus:ring-2 focus:ring-purple-600"
+              required
+            />
+            <input
+              type="text"
+              name="subject"
+              placeholder="Subject"
+              value={formData.subject}
+              onChange={handleChange}
+              className="border border-gray-300 rounded-md p-3 w-full focus:outline-none focus:ring-2 focus:ring-purple-600"
+              required
+            />
+          </div>
+
           <textarea
             name="message"
-            placeholder="Message"
+            placeholder="Message (HTML allowed from AI)"
             value={formData.message}
             onChange={handleChange}
-            rows={5}
-            className="border border-gray-300 rounded-md p-3 w-full mb-4 resize-none focus:outline-none focus:ring-2 focus:ring-purple-600"
+            rows={6}
+            className="border border-gray-300 rounded-md p-3 w-full mt-4 resize-none focus:outline-none focus:ring-2 focus:ring-purple-600"
             required
           />
 
-          <button
-            type="button"
-            onClick={handleGenerateAI}
-            disabled={loadingAI}
-            className={`mb-6 px-5 py-3 rounded-md font-semibold text-white transition ${
-              loadingAI
-                ? "bg-purple-400 cursor-not-allowed"
-                : "bg-purple-600 hover:bg-purple-700"
-            }`}
-          >
-            {loadingAI
-              ? "AI is writing your message..."
-              : "✨ Let AI help write your email"}
-          </button>
+          {/* Optional: quick HTML preview if AI returned bold/italic/lists */}
+          {formData.message && (
+            <div className="mt-3 p-3 border rounded bg-gray-50">
+              <div className="text-sm text-gray-600 mb-1">Preview:</div>
+              <div
+                className="prose max-w-none"
+                dangerouslySetInnerHTML={{ __html: formData.message }}
+              />
+            </div>
+          )}
 
-          <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-3 mt-4">
+            <button
+              type="button"
+              onClick={handleGenerateAI}
+              disabled={loadingAI}
+              className={`px-5 py-3 rounded-md font-semibold text-white transition ${
+                loadingAI
+                  ? "bg-purple-400 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700"
+              }`}
+            >
+              {loadingAI ? "AI is writing..." : "✨ Let AI help write your email"}
+            </button>
+
+            {!listening ? (
+              <button
+                type="button"
+                onClick={handleVoiceGenerate}
+                className="px-5 py-3 rounded-md font-semibold text-white bg-green-600 hover:bg-green-700 transition"
+              >
+                🎙️ Speak & AI-Generate
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={stopVoice}
+                className="px-5 py-3 rounded-md font-semibold text-white bg-red-600 hover:bg-red-700 transition"
+              >
+                ⏹ Stop
+              </button>
+            )}
+          </div>
+
+          {/* Recipients */}
+          <div className="mb-6 mt-6">
             <label className="block font-semibold mb-2 text-gray-700">
               Select recipients
             </label>
@@ -322,6 +470,7 @@ const Campaigns: React.FC = () => {
           </button>
         </form>
 
+        {/* Tabs */}
         <div className="flex justify-center space-x-4 mb-6">
           <button
             onClick={() => setActiveTab("draft")}
@@ -331,7 +480,7 @@ const Campaigns: React.FC = () => {
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            Drafts ({drafts.length + sendingCampaigns.length})
+            Drafts ({campaigns.filter(c => c.status !== "Sent" && c.status !== "Failed" && c.status !== "Sending").length + campaigns.filter(c => c.status === "Sending").length})
           </button>
           <button
             onClick={() => setActiveTab("sent")}
@@ -341,7 +490,7 @@ const Campaigns: React.FC = () => {
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            Sent ({sentCampaigns.length})
+            Sent ({campaigns.filter(c => c.status === "Sent").length})
           </button>
           <button
             onClick={() => setActiveTab("failed")}
@@ -351,10 +500,11 @@ const Campaigns: React.FC = () => {
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            Failed ({failedCampaigns.length})
+            Failed ({campaigns.filter(c => c.status === "Failed").length})
           </button>
         </div>
 
+        {/* List */}
         {displayedCampaigns.length === 0 ? (
           <p className="text-center text-gray-600">
             {activeTab === "draft"
@@ -400,17 +550,17 @@ const Campaigns: React.FC = () => {
                     >
                       <strong>Subject:</strong> {campaign.subject}
                     </p>
-                    <p
+                    <div
                       className={`${
                         activeTab === "draft"
                           ? "text-gray-700"
                           : activeTab === "sent"
                           ? "text-green-700"
                           : "text-red-700"
-                      } mt-2 whitespace-pre-wrap`}
-                    >
-                      {campaign.message}
-                    </p>
+                      } mt-2 prose max-w-none`}
+                      // Render HTML for message
+                      dangerouslySetInnerHTML={{ __html: campaign.message }}
+                    />
                     <p
                       className={`${
                         activeTab === "draft"
@@ -420,7 +570,7 @@ const Campaigns: React.FC = () => {
                           : "text-red-600"
                       } mt-3 text-sm`}
                     >
-                      <strong>Recipients:</strong> {campaign.recipients.length}
+                      <strong>Recipients:</strong> {JSON.stringify(campaign.recipients.map(r => r.email))}
                     </p>
 
                     {campaign.status === "Sent" && (
@@ -463,7 +613,10 @@ const Campaigns: React.FC = () => {
         )}
       </div>
     </>
+
   );
 };
 
 export default Campaigns;
+
+ 
