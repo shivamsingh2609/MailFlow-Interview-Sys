@@ -1,11 +1,10 @@
-// src/pages/Campaigns.tsx
-// src/pages/Campaigns.tsx
+
 import React, { useEffect, useState, useRef } from "react";
 import Navbar from "../components/Navbar";
 import apiClient from "../api/axiosInstance";
 import toast, { Toaster } from "react-hot-toast";
 
-// ✅ Add SpeechRecognition typings here (so we don't need @types/w3c-web-speech)
+
 declare global {
   interface SpeechRecognition extends EventTarget {
     start(): void;
@@ -216,31 +215,49 @@ const Campaigns: React.FC = () => {
     }
   };
 
-  const handleGenerateAI = async () => {
-    if (!formData.name.trim()) return toast.error("Enter a campaign name first");
+  // const handleGenerateAI = async () => {
+  //   if (!formData.name.trim()) return toast.error("Enter a campaign name first");
 
-    try {
-      setLoadingAI(true);
-      const res = await apiClient.post(
-        "http://localhost:5000/api/campaigns/generate",
-        {
-          prompt: `Write an engaging marketing email for the campaign: ${formData.name}`,
-        }
-      );
-      setFormData((prev) => ({
-        ...prev,
-        message: res.data.content || prev.message,
-      }));
-    } catch (error) {
-      console.error("AI generation error:", error);
-      toast.error("AI generation failed. Please try again.");
-    } finally {
-      setLoadingAI(false);
-    }
-  };
+  //   try {
+  //     setLoadingAI(true);
+  //     const {data} = await apiClient.post(
+  //       "http://localhost:5000/api/campaigns/generate",
+  //       {
+  //         prompt: `Write an engaging marketing email for the campaign: ${formData.name}`,
+  //       }
+  //     );
+  //      let aiResult: any;
+  //     if (typeof data === "string") {
+  //       try {
+  //         aiResult = JSON.parse(data);
+  //       } catch {
+  //         throw new Error("Invalid AI response format");
+  //       }
+  //     } else {
+  //       aiResult = data;
+  //     }
 
-  // 🎙️ Voice → AI generation
-// 🎙️ Voice → AI generation
+  //     // Extract from content
+  //     const { name, subject, message } = aiResult.content || {};
+
+  //     console.log("AI response:", name, subject, message);
+
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       name: name || prev.name,
+  //       subject: subject || prev.subject,
+  //       message: message || prev.message,
+  //     }));
+
+  //   } catch (error) {
+  //     console.error("AI generation error:", error);
+  //     toast.error("AI generation failed. Please try again.");
+  //   } finally {
+  //     setLoadingAI(false);
+  //   }
+  // };
+
+ 
 const handleVoiceGenerate = () => {
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -388,7 +405,7 @@ const handleVoiceGenerate = () => {
           )}
 
           <div className="flex flex-wrap items-center gap-3 mt-4">
-            <button
+            {/* <button
               type="button"
               onClick={handleGenerateAI}
               disabled={loadingAI}
@@ -399,7 +416,7 @@ const handleVoiceGenerate = () => {
               }`}
             >
               {loadingAI ? "AI is writing..." : "✨ Let AI help write your email"}
-            </button>
+            </button> */}
 
             {!listening ? (
               <button

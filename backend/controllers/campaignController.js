@@ -136,18 +136,26 @@ export const sendCampaign = async (req, res) => {
 export const generateEmail = async (req, res) => {
   try {
     const { prompt } = req.body;
-    if (!prompt) {
+    if (!prompt || typeof prompt !== "string") {
       return res.status(400).json({ message: "Prompt is required" });
     }
 
     const aiContent = await generateEmailContent(prompt);
+    console.log("Generated AI content:", aiContent);
 
-    res.status(200).json({ content: aiContent });
+    return res.status(200).json({ content: aiContent });
+
   } catch (error) {
-    // console.error("Error generating email content:", error);
-    res.status(500).json({ message: "Failed to generate email content" });
+    console.error("Error generating email content:", error);
+
+    return res.status(500).json({ 
+      message: "Failed to generate email content", 
+      error: error.message,           // send actual error
+      stack: error.stack              // optional, for debugging
+    });
   }
 };
+
 
 export const deleteCampaign = async (req, res) => {
   try {

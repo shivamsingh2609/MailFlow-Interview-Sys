@@ -37,3 +37,4 @@ Do NOT include any extra text outside the JSON.`,
     throw new Error("AI generation failed: " + error.message);
   }
 };
+

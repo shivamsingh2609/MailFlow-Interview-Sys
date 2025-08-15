@@ -18,16 +18,11 @@ function isEmailFormatValid(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-
 function hasMXRecords(email) {
   return new Promise((resolve) => {
     const domain = email.split("@")[1];
     dns.resolveMx(domain, (err, addresses) => {
-      if (err || !addresses || addresses.length === 0) {
-        resolve(false);
-      } else {
-        resolve(true);
-      }
+      resolve(!err && addresses && addresses.length > 0);
     });
   });
 }
@@ -36,10 +31,10 @@ function checkMailbox(email) {
   return new Promise((resolve) => {
     emailExistence.check(email, (err, res) => {
       if (err) {
-        // console.error("SMTP check error:", err);
+        console.error("SMTP check error:", err);
         resolve(false);
       } else {
-        resolve(res); 
+        resolve(res);
       }
     });
   });
@@ -52,7 +47,7 @@ export const sendMailService = async (ownerUserId, campaignId) => {
       createdBy: ownerUserId,
       status: "Draft",
     });
-    console.log("Campaign found:", campaign);
+
     if (!campaign || !campaign.recipients?.length) {
       return { success: false, message: "No recipients found for this campaign" };
     }
@@ -90,25 +85,27 @@ Sent by: ${user.username} (${user.email})
     for (const recipient of campaign.recipients) {
       const email = recipient.email;
 
+      // Step 1: Format check
       if (!isEmailFormatValid(email)) {
         failedEmails.push(`${email} (Invalid format)`);
         continue;
       }
 
+      // Step 2: MX record check
       const hasMX = await hasMXRecords(email);
       if (!hasMX) {
         failedEmails.push(`${email} (No MX records found)`);
         continue;
       }
 
-      
-      // const exists = await checkMailbox(email);
-      // if (!exists) {
-      //   failedEmails.push(`${email} (Mailbox not found)`);
-      //   continue;
-      // }
+      // Step 3: Mailbox existence check
+      const exists = await checkMailbox(email);
+      if (!exists) {
+        failedEmails.push(`${email} (Mailbox not found)`);
+        continue;
+      }
 
-      
+      // Step 4: Try sending
       try {
         await transporter.sendMail({
           from: `"${user.username}" <${process.env.MAIL}>`,
@@ -119,29 +116,28 @@ Sent by: ${user.username} (${user.email})
         });
         sentEmails.push(email);
       } catch (err) {
-        // console.error(`❌ Failed to send to ${email}:`, err.message);
         failedEmails.push(`${email} (Send error: ${err.message})`);
       }
     }
 
+    // Status update
     if (failedEmails.length > 0) {
       campaign.status = sentEmails.length > 0 ? "Partial" : "Failed";
-      await campaign.save();
-      return {
-        success: false,
-        message: `Failed: ${failedEmails.join(", ")} | Sent: ${sentEmails.join(", ")}`,
-      };
+    } else {
+      campaign.status = "Sent";
     }
 
-    campaign.status = "Sent";
     await campaign.save();
 
     return {
-      success: true,
-      message: `Emails sent successfully to ${sentEmails.length} recipients`,
+      success: failedEmails.length === 0,
+      message:
+        failedEmails.length > 0
+          ? `Failed: ${failedEmails.join(", ")} | Sent: ${sentEmails.join(", ")}`
+          : `Emails sent successfully to ${sentEmails.length} recipients`,
     };
   } catch (error) {
-    // console.error("Error sending campaign emails:", error);
+    console.error("Error sending campaign emails:", error);
     return { success: false, message: "Error sending campaign emails" };
   }
 };
