@@ -59,7 +59,7 @@ export const createCampaign = async (req, res) => {
         name: c.name,
         email: c.email
       }));
-
+      console.log("Formatted recipients (Case 1):", formattedRecipients);
     // Case 2: recipients are already objects
     } else if (recipients[0]?.contactId) {
       formattedRecipients = recipients.map(r => ({
@@ -124,13 +124,13 @@ export const sendCampaign = async (req, res) => {
     // ✅ Normalize & save recipients if passed in request
     if (Array.isArray(req.body.recipients) && req.body.recipients.length > 0) {
       campaign.recipients = req.body.recipients.map(r =>
-        typeof r === "string" ? { email: r } : r
+        typeof r === "string" ? { email: r.email } : r
       );
       await campaign.save();
     } else {
       // normalize already stored recipients
       campaign.recipients = campaign.recipients.map(r =>
-        typeof r === "string" ? { email: r } : r
+        typeof r === "string" ? { email: r.email } : r
       );
       await campaign.save();
     }
