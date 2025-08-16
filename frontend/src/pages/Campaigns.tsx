@@ -142,6 +142,7 @@ const Campaigns: React.FC = () => {
         email: contact.email,
       }));
 
+    console.log("Recipient snapshots:", recipientSnapshots);
     apiClient
       .post("/api/campaigns", {
         name: formData.name,
@@ -179,6 +180,7 @@ const Campaigns: React.FC = () => {
           recipients: campaignToSend.recipients.map((r) => r.email),
         }
       );
+      console.log("Campaign sent response:", res.data.recipients);
 
       const statusFromBackend = res.data.campaign?.status || "Failed";
       setCampaigns((prev) =>

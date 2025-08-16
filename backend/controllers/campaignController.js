@@ -115,7 +115,7 @@ export const sendCampaign = async (req, res) => {
       return res.status(404).json({ message: "Campaign not found" });
     }
 
-    // If no recipients in DB or request → reject
+    // If no recipients anywhere → reject
     if (
       (!Array.isArray(campaign.recipients) || campaign.recipients.length === 0) &&
       (!Array.isArray(req.body.recipients) || req.body.recipients.length === 0)
@@ -123,17 +123,43 @@ export const sendCampaign = async (req, res) => {
       return res.status(400).json({ message: "No recipients provided for this campaign" });
     }
 
-    // ✅ Normalize & save recipients if passed in request
+    // If recipients passed from frontend, normalize and set them on campaign
+    // Accepts: ['a@b.com', 'c@d.com'] OR [{ email, name, contactId }, ...]
     if (Array.isArray(req.body.recipients) && req.body.recipients.length > 0) {
-      campaign.recipients = req.body.recipients.map(r =>
-        typeof r === "string" ? { email: r.email } : r
-      );
+      const normalized = req.body.recipients.map((r) => {
+        if (typeof r === "string") {
+          // r is an email string
+          return { email: r };
+        }
+        // if it's an object, prefer email/name/contactId if present
+        if (r.email) {
+          return { email: r.email, name: r.name || undefined, contactId: r.contactId || r._id || undefined };
+        }
+        if (r.contactId) {
+          return { contactId: r.contactId };
+        }
+        if (r._id) {
+          return { contactId: r._id };
+        }
+        return r;
+      });
+
+      campaign.recipients = normalized;
       await campaign.save();
     } else {
-      // normalize already stored recipients
-      campaign.recipients = campaign.recipients.map(r =>
-        typeof r === "string" ? { email: r.email } : r
-      );
+      // Normalize stored recipients to a predictable shape (do not overwrite good email fields)
+      campaign.recipients = campaign.recipients.map((r) => {
+        // If recipient was stored as a plain string (rare)
+        if (typeof r === "string") return { email: r };
+
+        // If it's an ObjectId-like stored by mongoose as { _id: ... } or populated contact object
+        if (r.email) return { email: r.email, name: r.name, contactId: r.contactId || r._id };
+        if (r.contactId) return { contactId: r.contactId, name: r.name };
+        if (r._id) return { contactId: r._id }; // treat as contact reference
+        return r;
+      });
+
+      // Save the normalized shape so next time it's cleaner
       await campaign.save();
     }
 
@@ -159,7 +185,6 @@ export const sendCampaign = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 
 

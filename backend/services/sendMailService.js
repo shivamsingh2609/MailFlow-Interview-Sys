@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import Campaign from "../models/Campaign.js";
 import User from "../models/user.js";
+import Contact from "../models/Contact.js";
 import dotenv from "dotenv";
 import dns from "dns";
 import emailExistence from "email-existence";
@@ -22,6 +23,7 @@ function isEmailFormatValid(email) {
 function hasMXRecords(email) {
   return new Promise((resolve) => {
     const domain = email.split("@")[1];
+    if (!domain) return resolve(false);
     dns.resolveMx(domain, (err, addresses) => {
       resolve(!err && addresses && addresses.length > 0);
     });
@@ -32,30 +34,89 @@ function checkMailbox(email) {
   return new Promise((resolve) => {
     emailExistence.check(email, (err, res) => {
       if (err) {
-        console.error(`SMTP check error for ${email}:`, err.message);
+        console.error(`SMTP check error for ${email}:`, err && err.message ? err.message : err);
         return resolve(false); // fail safe
       }
-      resolve(res); // true if exists, false if not
+      // res is boolean true/false from email-existence lib
+      resolve(Boolean(res));
     });
   });
 }
 
+/**
+ * Resolve a recipient entry to an object { email, name?, source: 'contact'|'direct'|'unknown' }
+ * Accepts recipient shapes:
+ *  - { email: 'a@b.com', name: 'A' }
+ *  - { contactId: 'contactObjectId' } / { _id: 'contactObjectId' }
+ *  - { _id: 'contactObjectId' } (when stored as reference)
+ */
+async function resolveRecipient(rec) {
+  // if it's already proper object containing email
+  if (rec?.email) {
+    return { email: String(rec.email).trim(), name: rec.name || undefined, source: "direct" };
+  }
+
+  const contactId = rec?.contactId || rec?._id;
+  if (contactId) {
+    try {
+      const contact = await Contact.findById(contactId).select("email name");
+      if (contact && contact.email) {
+        return { email: String(contact.email).trim(), name: contact.name || undefined, source: "contact" };
+      }
+      return { email: null, name: undefined, source: "contact" };
+    } catch (err) {
+      console.error("Error fetching contact for recipient:", err);
+      return { email: null, name: undefined, source: "contact" };
+    }
+  }
+
+  // fallback — sometimes frontend may send raw string (email)
+  if (typeof rec === "string") {
+    return { email: rec.trim(), name: undefined, source: "direct" };
+  }
+
+  // unknown shape
+  return { email: null, name: undefined, source: "unknown" };
+}
+
 export const sendMailService = async (ownerUserId, campaignId) => {
   try {
+    // find campaign belonging to user and with Draft status
     const campaign = await Campaign.findOne({
       _id: campaignId,
       createdBy: ownerUserId,
-      status: "Draft",
+      // allow sending if status is Draft or Partial (optionally)
+      status: { $in: ["Draft", "Partial"] },
     });
 
     if (!campaign || !campaign.recipients?.length) {
       return { success: false, message: "No recipients found for this campaign" };
     }
 
-    // Normalize recipients (string or { email })
-    const recipients = campaign.recipients.map(r =>
-      typeof r === "string" ? { email: r } : r
-    );
+    // Resolve all recipients to get emails
+    const resolvedRecipients = [];
+    for (const r of campaign.recipients) {
+      const resolved = await resolveRecipient(r);
+      resolvedRecipients.push(resolved);
+    }
+
+    // Filter and validate
+    const finalRecipients = [];
+    const invalidRecipients = [];
+    for (const r of resolvedRecipients) {
+      if (!r.email) {
+        invalidRecipients.push({ reason: "Empty email (Invalid input)", raw: r });
+        continue;
+      }
+      finalRecipients.push(r);
+    }
+
+    if (finalRecipients.length === 0) {
+      // nothing valid to send to
+      campaign.status = "Failed";
+      await campaign.save();
+      return { success: false, message: "❌ Failed: No valid recipient emails found", campaign };
+    }
 
     const user = await User.findById(ownerUserId).select("username email");
     if (!user) {
@@ -87,35 +148,44 @@ Sent by: ${user.username} (${user.email})
     let failedEmails = [];
     let sentEmails = [];
 
-    for (const recipient of recipients) {
-      const email = recipient.email?.trim();
-
-      if (!email) {
-        failedEmails.push("Empty email (Invalid input)");
-        continue;
-      }
-
-      // Step 1: Format check
+    // Iterate recipients one by one (so we can update status per result)
+    for (const r of finalRecipients) {
+      const email = r.email;
+      // Simple format check
       if (!isEmailFormatValid(email)) {
         failedEmails.push(`${email} (Invalid format)`);
         continue;
       }
 
-      // Step 2: MX record check
-      const hasMX = await hasMXRecords(email);
-      if (!hasMX) {
-        failedEmails.push(`${email} (No MX records found)`);
+      // MX check (optional — can be slow for many recipients)
+      try {
+        const hasMX = await hasMXRecords(email);
+        if (!hasMX) {
+          failedEmails.push(`${email} (No MX records found)`);
+          continue;
+        }
+      } catch (err) {
+        // treat as failed MX check
+        console.error("MX check error:", err);
+        failedEmails.push(`${email} (MX check error)`);
         continue;
       }
 
-      // Step 3: Mailbox existence check
-      const exists = await checkMailbox(email);
-      if (!exists) {
-        failedEmails.push(`${email} (Mailbox not found)`);
+      // Mailbox existence check (optional & slower)
+      try {
+        const exists = await checkMailbox(email);
+        if (!exists) {
+          failedEmails.push(`${email} (Mailbox not found)`);
+          continue;
+        }
+      } catch (err) {
+        console.error("Mailbox check error:", err);
+        // If mailbox check fails, we can choose to continue and try sending; but we'll mark as failed to be conservative
+        failedEmails.push(`${email} (Mailbox check error)`);
         continue;
       }
 
-      // Step 4: Try sending
+      // Try sending
       try {
         await transporter.sendMail({
           from: `"${user.username}" <${process.env.MAIL}>`,
@@ -126,16 +196,27 @@ Sent by: ${user.username} (${user.email})
         });
         sentEmails.push(email);
       } catch (err) {
-        failedEmails.push(`${email} (Send error: ${err.message})`);
+        console.error("Send error for", email, err && err.message ? err.message : err);
+        failedEmails.push(`${email} (Send error: ${err && err.message ? err.message : "unknown"})`);
       }
     }
 
-    // Update campaign status
+    // Update campaign status based on results
     if (failedEmails.length > 0) {
       campaign.status = sentEmails.length > 0 ? "Partial" : "Failed";
     } else {
       campaign.status = "Sent";
     }
+
+    // Optionally replace campaign.recipients with normalized recipients including emails
+    campaign.recipients = campaign.recipients.map((orig, idx) => {
+      // try to attach email if we have one in finalRecipients with same index by email
+      const resolved = resolvedRecipients[idx];
+      if (resolved?.email) {
+        return { ...orig, email: resolved.email, name: resolved.name || orig.name || undefined };
+      }
+      return orig;
+    });
 
     await campaign.save();
 
