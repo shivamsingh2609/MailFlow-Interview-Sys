@@ -164,6 +164,7 @@ const Campaigns: React.FC = () => {
   };
 
   const handleSend = async (id: string) => {
+    console.log("hii")
     const campaignToSend = campaigns.find((c) => c._id === id);
     if (!campaignToSend) return;
 
@@ -175,7 +176,7 @@ const Campaigns: React.FC = () => {
       const res = await apiClient.post(
         `/api/campaigns/send/${id}`,
         {
-          recipients: campaignToSend.recipients.map((r) => r.email),
+          recipients: campaignToSend.recipients.map((r) => r.contactId),
         }
       );
 
