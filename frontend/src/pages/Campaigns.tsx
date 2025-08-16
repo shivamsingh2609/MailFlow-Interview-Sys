@@ -176,7 +176,7 @@ const Campaigns: React.FC = () => {
       const res = await apiClient.post(
         `/api/campaigns/send/${id}`,
         {
-          recipients: campaignToSend.recipients.map((r) => r.contactId),
+          recipients: campaignToSend.recipients.map((r) => r.email),
         }
       );
 

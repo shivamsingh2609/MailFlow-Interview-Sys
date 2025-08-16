@@ -70,7 +70,9 @@ export const createCampaign = async (req, res) => {
 
     } else {
       return res.status(400).json({ message: "Invalid recipients format" });
+
     }
+    console.log("Formatted recipients (Case 2):", formattedRecipients);
 
     // Create and save campaign
     const newCampaign = new Campaign({
