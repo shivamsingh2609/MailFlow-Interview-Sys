@@ -20,7 +20,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
 
     apiClient
-      .get(`${process.env.REACT_APP_API_BASE_URL}/api/auth/validate-token`)
+      .get("/api/auth/validate-token")
       .then(() => {
         setIsValid(true);
       })

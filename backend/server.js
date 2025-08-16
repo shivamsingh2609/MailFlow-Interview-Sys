@@ -18,7 +18,7 @@ const app = express();
 
 app.use(cors({
   origin: [
-    "https://mailflow-interview-sys-production-f899.up.railway.app", // backend domain
+    // "https://mailflow-interview-sys-production-e1c5.up.railway.app", // backend domain
     // frontend domain in production
     "http://localhost:3000" // dev frontend
   ]
