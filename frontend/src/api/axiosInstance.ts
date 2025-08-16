@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: "https://mailflow-interview-sys-production-2001.up.railway.app",
+  baseURL: process.env.REACT_APP_API_BASE_URL ,
 
 });
 
