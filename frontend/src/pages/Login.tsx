@@ -15,7 +15,9 @@ export default function Login() {
         email :email.trim() ,
         password :password,
       }
+      console.log("Logging in with:", loginData);
       const res = await apiClient.post("/api/auth/", loginData);
+
       const token =res.data.token ;
       const user = res.data.user;
       if (user && user._id) {
