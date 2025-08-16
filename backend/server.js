@@ -17,11 +17,9 @@ const app = express();
 
 
 app.use(cors({
-  origin: [
-    // "http://localhost:3000" // dev frontends
-    
-    "https://effulgent-faun-f79aeb.netlify.app/",
-  ]
+  origin: "https://effulgent-faun-f79aeb.netlify.app",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
 }));
 
 
