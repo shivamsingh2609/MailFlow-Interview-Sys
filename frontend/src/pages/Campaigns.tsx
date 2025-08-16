@@ -78,7 +78,7 @@ const Campaigns: React.FC = () => {
   const fetchCampaigns = () => {
     if (!userId) return;
     apiClient
-      .get(`http://localhost:5000/api/campaigns?userId=${userId}`)
+      .get(`/api/campaigns?userId=${userId}`)
       .then((res) => setCampaigns(res.data))
       .catch((err) => console.error("Error fetching campaigns:", err));
   };
@@ -87,7 +87,7 @@ const Campaigns: React.FC = () => {
     fetchCampaigns();
     if (!userId) return;
     apiClient
-      .get(`http://localhost:5000/api/contacts?userId=${userId}`)
+      .get(`/api/contacts?userId=${userId}`)
       .then((res) => setContacts(res.data))
       .catch((err) => console.error("Error fetching contacts:", err));
   }, [userId]);
@@ -143,7 +143,7 @@ const Campaigns: React.FC = () => {
       }));
 
     apiClient
-      .post("http://localhost:5000/api/campaigns", {
+      .post("/api/campaigns", {
         name: formData.name,
         subject: formData.subject,
         message: formData.message,
@@ -173,7 +173,7 @@ const Campaigns: React.FC = () => {
 
     try {
       const res = await apiClient.post(
-        `http://localhost:5000/api/campaigns/send/${id}`,
+        `/api/campaigns/send/${id}`,
         {
           recipients: campaignToSend.recipients.map((r) => r.contactId),
         }
@@ -204,7 +204,7 @@ const Campaigns: React.FC = () => {
     if (!window.confirm("Are you sure you want to delete this campaign?")) return;
 
     try {
-      await apiClient.delete(`http://localhost:5000/api/campaigns/${id}`, {
+      await apiClient.delete(`/api/campaigns/${id}`, {
         params: { userId },
       });
       setCampaigns((prev) => prev.filter((campaign) => campaign._id !== id));
@@ -280,7 +280,7 @@ const handleVoiceGenerate = () => {
       toast.loading("Generating campaign from voice...", { id: "voiceGen" });
 
       const { data } = await apiClient.post(
-        "http://localhost:5000/api/campaigns/generate",
+        "/api/campaigns/generate",
         { prompt: transcript }
       );
 

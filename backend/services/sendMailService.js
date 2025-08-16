@@ -4,6 +4,7 @@ import User from "../models/user.js";
 import dotenv from "dotenv";
 import dns from "dns";
 import emailExistence from "email-existence";
+
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
@@ -31,11 +32,10 @@ function checkMailbox(email) {
   return new Promise((resolve) => {
     emailExistence.check(email, (err, res) => {
       if (err) {
-        console.error("SMTP check error:", err);
-        resolve(false);
-      } else {
-        resolve(res);
+        console.error(`SMTP check error for ${email}:`, err.message);
+        return resolve(false); // fail safe
       }
+      resolve(res); // true if exists, false if not
     });
   });
 }
@@ -51,6 +51,11 @@ export const sendMailService = async (ownerUserId, campaignId) => {
     if (!campaign || !campaign.recipients?.length) {
       return { success: false, message: "No recipients found for this campaign" };
     }
+
+    // Normalize recipients (string or { email })
+    const recipients = campaign.recipients.map(r =>
+      typeof r === "string" ? { email: r } : r
+    );
 
     const user = await User.findById(ownerUserId).select("username email");
     if (!user) {
@@ -82,8 +87,13 @@ Sent by: ${user.username} (${user.email})
     let failedEmails = [];
     let sentEmails = [];
 
-    for (const recipient of campaign.recipients) {
-      const email = recipient.email;
+    for (const recipient of recipients) {
+      const email = recipient.email?.trim();
+
+      if (!email) {
+        failedEmails.push("Empty email (Invalid input)");
+        continue;
+      }
 
       // Step 1: Format check
       if (!isEmailFormatValid(email)) {
@@ -120,7 +130,7 @@ Sent by: ${user.username} (${user.email})
       }
     }
 
-    // Status update
+    // Update campaign status
     if (failedEmails.length > 0) {
       campaign.status = sentEmails.length > 0 ? "Partial" : "Failed";
     } else {
@@ -133,8 +143,8 @@ Sent by: ${user.username} (${user.email})
       success: failedEmails.length === 0,
       message:
         failedEmails.length > 0
-          ? `Failed: ${failedEmails.join(", ")} | Sent: ${sentEmails.join(", ")}`
-          : `Emails sent successfully to ${sentEmails.length} recipients`,
+          ? `❌ Failed: ${failedEmails.join(", ")} | ✅ Sent: ${sentEmails.join(", ")}`
+          : `✅ Emails sent successfully to ${sentEmails.length} recipients`,
     };
   } catch (error) {
     console.error("Error sending campaign emails:", error);

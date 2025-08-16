@@ -31,8 +31,8 @@ const Dashboard: React.FC = () => {
     const fetchStats = async () => {
       try {
         const [campaignRes, contactRes] = await Promise.all([
-          apiClient.get(`http://localhost:5000/api/campaigns?userId=${userId}`),
-          apiClient.get(`http://localhost:5000/api/contacts?userId=${userId}`),
+          apiClient.get(`/api/campaigns?userId=${userId}`),
+          apiClient.get(`/api/contacts?userId=${userId}`),
         ]);
 
         const campaigns = campaignRes.data;

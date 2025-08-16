@@ -18,7 +18,7 @@ export default function Contacts() {
         console.error('No userId found in localStorage');
         return;
       }
-      const res = await apiClient.get('http://localhost:5000/api/contacts', {
+      const res = await apiClient.get('/api/contacts', {
         params: { userId },
       });
       setContacts(res.data);
@@ -43,12 +43,12 @@ export default function Contacts() {
       setLoading(true);
 
       if (form._id) {
-        await apiClient.put(`http://localhost:5000/api/contacts/${form._id}`, {
+        await apiClient.put(`/api/contacts/${form._id}`, {
           ...form,
           userId,
         });
       } else {
-        await apiClient.post('http://localhost:5000/api/contacts', {
+        await apiClient.post('/api/contacts', {
           ...form,
           userId,
         });
@@ -81,7 +81,7 @@ export default function Contacts() {
         return;
       }
       setLoading(true);
-      const res = await apiClient.delete(`http://localhost:5000/api/contacts/${deletingId}`, {
+      const res = await apiClient.delete(`/api/contacts/${deletingId}`, {
         params: { userId },
       });
       alert(res.data.message || 'Contact deleted');

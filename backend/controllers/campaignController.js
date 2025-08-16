@@ -106,31 +106,59 @@ export const sendCampaign = async (req, res) => {
   try {
     const { id: campaignId } = req.params;
     console.log("Sending campaign with ID:", campaignId);
-    const campaign = await Campaign.findById(campaignId);
 
+    // Fetch campaign from DB
+    let campaign = await Campaign.findById(campaignId);
     if (!campaign) {
       return res.status(404).json({ message: "Campaign not found" });
     }
 
-    if (!Array.isArray(campaign.recipients) || campaign.recipients.length === 0) {
-      return res.status(400).json({ message: "No recipients found for this campaign" });
+    // If no recipients in DB or request → reject
+    if (
+      (!Array.isArray(campaign.recipients) || campaign.recipients.length === 0) &&
+      (!Array.isArray(req.body.recipients) || req.body.recipients.length === 0)
+    ) {
+      return res.status(400).json({ message: "No recipients provided for this campaign" });
     }
 
-   
+    // ✅ Normalize & save recipients if passed in request
+    if (Array.isArray(req.body.recipients) && req.body.recipients.length > 0) {
+      campaign.recipients = req.body.recipients.map(r =>
+        typeof r === "string" ? { email: r } : r
+      );
+      await campaign.save();
+    } else {
+      // normalize already stored recipients
+      campaign.recipients = campaign.recipients.map(r =>
+        typeof r === "string" ? { email: r } : r
+      );
+      await campaign.save();
+    }
+
+    // Call mail service
     const result = await sendMailService(campaign.createdBy, campaignId);
 
+    // Refetch updated campaign after sending
     const updatedCampaign = await Campaign.findById(campaignId);
 
     if (result.success) {
-      return res.status(200).json({ message: result.message, campaign: updatedCampaign });
+      return res.status(200).json({
+        message: result.message,
+        campaign: updatedCampaign,
+      });
     } else {
-      return res.status(400).json({ message: result.message, campaign: updatedCampaign });
+      return res.status(400).json({
+        message: result.message,
+        campaign: updatedCampaign,
+      });
     }
   } catch (error) {
-    // console.error("Error sending campaign:", error);
+    console.error("Error sending campaign:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
 
 
 export const generateEmail = async (req, res) => {
